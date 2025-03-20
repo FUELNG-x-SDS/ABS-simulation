@@ -1,10 +1,18 @@
 # ABS-simulation
 
 ## To-do's
-- [ ] Fix statistics - know what to add and why.
+- [ ] Upload image assets for different vessels.
+- [ ] Create side bar layout.
+- [ ] "Current cycle" statistics: 1h = 1s in simulation time.
 - [ ] Add 3/4 more ship types for simulation.
+- [ ] Fix vessels/ships behaviours: have instances when they fail to function, randomly pick from a uniform distribution when their bunkering is done.
+- [ ] Have a button to increase, decrease, reset capabilities.
 - [ ] Deploy to cloud (if needed).
 
+Proposed UI simulation workflow: 
+<div style="text-align: center;">
+    <img src="readme_assets/Plan_UI.png">
+</div>
 
 ## Installation
 ### Download code
