@@ -10,16 +10,33 @@
         <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='default.css') }}">
     </head>
     <body onclick="toggleSimStep()">
+
         <div id="title"><h3>Agent-Based Model</h3></div>
-        <div id="controls">Animation Speed:
-            <input id="slider1" type="range" min="0" value:"275" max="1000" step="10" onchange="redrawWindow();" /> 
-        </div>
         <div>Click anywhere to start/pause</div>
 
-        <!--Playing field of simulation-->
-	    <svg id="surface" style="width:100%; height:80vh; border: 2px solid #d3d3d3" xmlns="http://www.w3.org/2000/svg" version="1.1" >
-	    </svg>
+        <div id="container">
 
+            <!--Playing field of simulation-->
+            <div id="main-simulation">
+                <svg id="surface" style="width:100%; height:80vh; border: 2px solid #d3d3d3" xmlns="http://www.w3.org/2000/svg" version="1.1" ></svg>
+            </div>
+
+            <!-- Grey Sidebar -->
+            <div id="sidebar">
+                <div id="speed-section">
+                    <h3>Animation Speed</h3>
+                    <input id="slider1" type="range" min="0" value="275" max="1000" step="10" onchange="redrawWindow();" /> 
+                </div>
+
+                <h2>Vessel Belinna :</h2>
+                <h4>Current cycle</h4>
+                <p>Day:1</p>
+                <p>Current time:1200 h </p>
+                <h4>Number of Ships serviced on cycle</h4>
+
+            </div>
+                
+        </div>
 	    <!--Late-loading library-->
 	    <script type="text/javascript" src="static/lib/AgentModel.js"></script>
     </body>
