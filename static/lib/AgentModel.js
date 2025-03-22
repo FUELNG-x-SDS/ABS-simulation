@@ -145,8 +145,8 @@ function redrawWindow(){
 	var surfaceHeight= (h - 3*WINDOWBORDERSIZE);
 	// console.log(surfaceHeight);
 	
-	drawsurface.style.width = surfaceWidth+"px";
-	drawsurface.style.height = surfaceHeight+"px";
+	// drawsurface.style.width = surfaceWidth+"px";
+	// drawsurface.style.height = surfaceHeight+"px";
 	drawsurface.style.left = WINDOWBORDERSIZE/2+'px';
 	drawsurface.style.top = WINDOWBORDERSIZE/2+'px';
 	// drawsurface.style.border = "thick solid #0000FF"; //for debugging
@@ -575,12 +575,15 @@ function updateDynamicAgents(){
 	updateSurface();	
 }
 
+
 function simStep(){
 	// This function is called by a timer; if running, it executes one simulation step 
 	// The timing interval is set in the page initialization function near the top of this file
 	if (isRunning){ // Toggled by toggleSimStep
 		// Increment current time (for computing statistics)
 		currentTime++;
+		//Updates grey sidebar display
+		updateCurrentCycleDisplay(currentTime);
 		// Sometimes new agents will be created in the following function
 		addDynamicAgents();
 		// In the next function we update each agent
@@ -588,4 +591,16 @@ function simStep(){
 		// Sometimes agents will be removed in the following function
 		removeDynamicAgents();
 	}
+}
+
+function updateCurrentCycleDisplay(time){
+	const day = Math.floor(time/24) + 1;
+	const hour = Math.floor(time % 24);
+
+	//Update DOM - match to actual sidebar element IDs
+	document.getElementById("belinna-day").innerText = `Day: ${day}`;
+	document.getElementById("belinna-time").innerText = `Current time: ${hour}:00 h`;
+
+	document.getElementById("venossa-day").innerText = `Day: ${day}`;
+	document.getElementById("venossa-time").innerText = `Current time: ${hour}:00 h`;
 }
