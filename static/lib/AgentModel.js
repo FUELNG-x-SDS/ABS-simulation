@@ -12,11 +12,17 @@ var cellWidth; // Calculated in redrawWindow function
 var cellHeight;
 
 // Icons initialisation
-const iconShipForward = "static/images/ship_forward.png";
-const iconShipBackward = "static/images/ship_backward.png";
+// const iconShipForward = "static/images/ship_forward.png";
+// const iconShipBackward = "static/images/ship_backward.png";
 const iconVesselForward = "static/images/vessel_forward.png";
 const iconVesselBackward = "static/images/vessel_backward.png";
 const iconTank = "static/images/tank.png";
+const iconBulkCarrierForward = "static/images/bulkcarrier_forward.png";
+const iconBulkCarrierBackward = "static/images/bulkcarrier_backward.png";
+const iconCarShipForward = "static/images/carship_forward.png";
+const iconCarShipBackward = "static/images/carship_backward.png";
+const iconOilTankerForward = "static/images/oiltanker_forward.png";
+const iconOilTankerBackward = "static/images/oiltanker_backward.png";
 
 
 // Define fixed areas
@@ -254,7 +260,16 @@ function updateSurface(){
 	 .attr("y",function(d){var cell= getLocationCell(d.location); return cell.y+"px";})
 	 .attr("width", Math.min(cellWidth,cellHeight)+"px")
 	 .attr("height", Math.min(cellWidth,cellHeight)+"px")
-	 .attr("xlink:href",function(d){return iconShipForward;});
+	 .attr("xlink:href",function(d){
+		switch (d.type) {
+			case "carship":
+				return iconCarShipForward;
+			case "bulkcarrier":
+				return iconBulkCarrierForward;
+			case "oiltanker":
+				return iconOilTankerForward;
+		}
+	 });
 	
 	// For the existing ships --> update their location on the screen --> transition
 	// First, we select the image elements in the allships list
@@ -265,11 +280,16 @@ function updateSurface(){
 	 .attr("x",function(d){var cell= getLocationCell(d.location); return cell.x+"px";})
 	 .attr("y",function(d){var cell= getLocationCell(d.location); return cell.y+"px";})
 	 .attr("xlink:href",function(d){
-		if (d.state == COMPLETE || d.state == UNMOORING) {
-			return iconShipBackward;
-		} else {
-			return iconShipForward;
-		}})
+		switch (d.type) {
+			case "carship":
+				return (d.state === COMPLETE || d.state === UNMOORING) ? iconCarShipBackward : iconCarShipForward;	
+			case "bulkcarrier":
+				return (d.state === COMPLETE || d.state === UNMOORING) ? iconBulkCarrierBackward : iconBulkCarrierForward;
+			case "oiltanker":
+				return (d.state === COMPLETE || d.state === UNMOORING) ? iconOilTankerBackward : iconOilTankerForward;
+
+		}
+	 })
 	 .duration(animationDelay).ease('linear'); // This specifies the speed and type of transition we want.
  
 	
@@ -315,13 +335,15 @@ function addDynamicAgents(){
 			}
 
 			// Create the new ship object with the following initialised properties
-			var newship = {"id":1,
+			var newship = {"id": nextShipID++,
+							"type": ["carship", "bulkcarrier", "oiltanker"][getRandomInt(0,2)], //randomly chooses one of the four types of ships
 							"location":{"row":4,"col":11},
 							"target":{"row":port[1],"col":port[2]},
 							"state":MOORING,
 							"timeAdmitted":0,
 							"port": port[0],
 							"exit":{"row":seaRowExit,"col":seaCol}};
+							
 			// console.log(newship);
 			ships.push(newship);
 		}
@@ -593,6 +615,7 @@ function simStep(){
 	}
 }
 
+//updates Current cycle in grey sidebar
 function updateCurrentCycleDisplay(time){
 	const day = Math.floor(time/24) + 1;
 	const hour = Math.floor(time % 24);
