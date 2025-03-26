@@ -55,8 +55,8 @@ const COMPLETE=4;
 var ships = [];
 // Vessel is a static list, populated with Vessel A and Vessel B	
 var vessels = [
-    {"type":0,"label":"Vessel A","location":{"row":2,"col":2},"target":{"row":2,"col":2},"state":RIGGING},
-	{"type":1,"label":"Vessel B","location":{"row":4,"col":2},"target":{"row":4,"col":2},"state":RIGGING}
+    {"type":0,"label":"Vessel Bellina","location":{"row":2,"col":2},"target":{"row":2,"col":2},"state":RIGGING},
+	{"type":1,"label":"Vessel Venosa","location":{"row":4,"col":2},"target":{"row":4,"col":2},"state":RIGGING}
 ];
 var vessel_a = vessels[0];
 var vessel_b = vessels[1];
@@ -123,10 +123,10 @@ function toggleSimStep(){
 }
 
 function redrawWindow(){
-	isRunning = false; // used by simStep
-	window.clearInterval(simTimer); // clear the Timer
-	animationDelay = 550 - document.getElementById("slider1").value;
-	simTimer = window.setInterval(simStep, animationDelay); // call the function simStep every animationDelay milliseconds
+	// isRunning = false; // used by simStep
+	// window.clearInterval(simTimer); // clear the Timer
+	// animationDelay = 550 - document.getElementById("slider1").value;
+	// simTimer = window.setInterval(simStep, animationDelay); // call the function simStep every animationDelay milliseconds
 	
 	// Re-initialize simulation variables
 	currentTime = 0;
@@ -621,9 +621,17 @@ function updateCurrentCycleDisplay(time){
 	const hour = Math.floor(time % 24);
 
 	//Update DOM - match to actual sidebar element IDs
-	document.getElementById("belinna-day").innerText = `Day: ${day}`;
-	document.getElementById("belinna-time").innerText = `Current time: ${hour}:00 h`;
+	document.getElementById("bellina-day").innerText = `Day: ${day}`;
+	document.getElementById("bellina-time").innerText = `Current time: ${hour}:00 h`;
 
-	document.getElementById("venossa-day").innerText = `Day: ${day}`;
-	document.getElementById("venossa-time").innerText = `Current time: ${hour}:00 h`;
+	document.getElementById("venosa-day").innerText = `Day: ${day}`;
+	document.getElementById("venosa-time").innerText = `Current time: ${hour}:00 h`;
+}
+
+//updates speed of simulation smoothly, without redrawing window
+function updateSpeedOnly() {
+	const newDelay = Math.max(50, 550 - document.getElementById("slider1").value);
+	clearInterval(simTimer);
+	simTimer = setInterval(simStep, newDelay);
+	animationDelay = newDelay;
 }

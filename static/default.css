@@ -8,7 +8,7 @@ body {
 /*container contains simulation and sidebar*/
 #container{
     display: flex;
-    height: 87vh;
+    height: 88vh;
 
 }
 
@@ -19,6 +19,7 @@ body {
     padding: 10px; 
     font-size: 15px;
     line-height: 1;
+    margin-top: -10px;
     
 }
 
