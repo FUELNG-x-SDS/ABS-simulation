@@ -55,8 +55,8 @@ const COMPLETE=4;
 var ships = [];
 // Vessel is a static list, populated with Vessel A and Vessel B	
 var vessels = [
-    {"type":0,"label":"Vessel Bellina","location":{"row":2,"col":2},"target":{"row":2,"col":2},"state":RIGGING},
-	{"type":1,"label":"Vessel Venosa","location":{"row":4,"col":2},"target":{"row":4,"col":2},"state":RIGGING}
+    {"type":0,"label":"Vessel Bellina","location":{"row":2,"col":2},"target":{"row":2,"col":2},"state":RIGGING, "volume":7000, "maxvolume":7000},
+	{"type":1,"label":"Vessel Venosa","location":{"row":4,"col":2},"target":{"row":4,"col":2},"state":RIGGING, "volume":16800, "maxvolume":16800}
 ];
 var vessel_a = vessels[0];
 var vessel_b = vessels[1];
@@ -412,6 +412,13 @@ function updateShip(shipIndex){
 			if ((currentTime - ship.timeAdmitted) >= 4){
 				ship.state = COMPLETE;
 				vessel.state = COMPLETE;
+
+				// Deduct random LNG amount from vessel
+				let amountUsed = getRandomInt(500, 1500); //Range from 500 to 1500
+				vessel.volume -= amountUsed;
+				if (vessel.volume < 0) vessel.volume = 0;
+
+				console.log(`${vessel.label} serviced ${ship.type}, used ${amountUsed} m³ LNG, remaining: ${vessel.volume} m³`);
 			}
 
 			// setTimeout(function() {
@@ -545,6 +552,10 @@ function updateVessel(vesselIndex){
 
 		case RETURN:
 			if (hasArrived){
+				if (vessel.volume < 100){
+					vessel.volume = vessel.maxvolume;
+					console.log(`${vessel.label} refueled back to ${vessel.volume} m³`);
+				}
 				vessel.state = RIGGING;
 			}
 		break;
@@ -626,6 +637,10 @@ function updateCurrentCycleDisplay(time){
 
 	document.getElementById("venosa-day").innerText = `Day: ${day}`;
 	document.getElementById("venosa-time").innerText = `Current time: ${hour}:00 h`;
+
+	// 🔁 NEW: Update volumes in the DOM
+	document.getElementById("bellina-volume").innerText = vessel_a.volume.toFixed(0);
+	document.getElementById("venosa-volume").innerText = vessel_b.volume.toFixed(0);
 }
 
 //updates speed of simulation smoothly, without redrawing window
