@@ -12,8 +12,8 @@ var cellWidth; // Calculated in redrawWindow function
 var cellHeight;
 
 // Icons initialisation
-// const iconShipForward = "static/images/ship_forward.png";
-// const iconShipBackward = "static/images/ship_backward.png";
+const iconContainerForward = "static/images/container_forward.png";
+const iconContainerBackward = "static/images/container_backward.png";
 const iconVesselForward = "static/images/vessel_forward.png";
 const iconVesselBackward = "static/images/vessel_backward.png";
 const iconTank = "static/images/tank.png";
@@ -39,6 +39,7 @@ var seaCol = 11;
 const RIGGING=0;
 const ARRIVAL=1;
 const RETURN=5; 
+const REFUELLING=6;
 
 // Ship states
 const MOORING=0;
@@ -268,6 +269,8 @@ function updateSurface(){
 				return iconBulkCarrierForward;
 			case "oiltanker":
 				return iconOilTankerForward;
+			case "container":
+				return iconContainerForward;
 		}
 	 });
 	
@@ -287,6 +290,8 @@ function updateSurface(){
 				return (d.state === COMPLETE || d.state === UNMOORING) ? iconBulkCarrierBackward : iconBulkCarrierForward;
 			case "oiltanker":
 				return (d.state === COMPLETE || d.state === UNMOORING) ? iconOilTankerBackward : iconOilTankerForward;
+			case "container":
+				return (d.state === COMPLETE || d.state === UNMOORING) ? iconContainerBackward : iconContainerForward;
 
 		}
 	 })
@@ -336,7 +341,7 @@ function addDynamicAgents(){
 
 			// Create the new ship object with the following initialised properties
 			var newship = {"id": nextShipID++,
-							"type": ["carship", "bulkcarrier", "oiltanker"][getRandomInt(0,2)], //randomly chooses one of the four types of ships
+							"type": ["carship", "bulkcarrier", "oiltanker","container"][getRandomInt(0,3)], //randomly chooses one of the four types of ships
 							"location":{"row":4,"col":11},
 							"target":{"row":port[1],"col":port[2]},
 							"state":MOORING,
@@ -443,11 +448,11 @@ function updateShip(shipIndex){
 			vessel.state = RETURN;
 			if (vessel.type == 0){
 				vessel.target.row = 2;
-				vessel.target.col = 2;
+				vessel.target.col = 4;
 			}
 			else{
 				vessel.target.row = 4;
-				vessel.target.col = 2;
+				vessel.target.col = 4;
 			}
 
 			var timeBunkering = currentTime - ship.timeAdmitted;
@@ -553,9 +558,21 @@ function updateVessel(vesselIndex){
 		case RETURN:
 			if (hasArrived){
 				if (vessel.volume < 100){
-					vessel.volume = vessel.maxvolume;
+					vessel.state = REFUELLING;
+					vessel.target = (vessel.type === 0)
+					? {row: 2, col: 2} //Tank for Bellina
+					: {row: 4, col: 2} //Tank for Venosa
 					console.log(`${vessel.label} refueled back to ${vessel.volume} m³`);
+				} else{
+				vessel.state = RIGGING;
 				}
+			}
+		break;
+
+		case REFUELLING:
+			if (hasArrived) {
+				vessel.volume = vessel.maxvolume
+				console.log(`${vessel.label} has refueled to ${vessel.volume} m³`);
 				vessel.state = RIGGING;
 			}
 		break;
@@ -638,9 +655,13 @@ function updateCurrentCycleDisplay(time){
 	document.getElementById("venosa-day").innerText = `Day: ${day}`;
 	document.getElementById("venosa-time").innerText = `Current time: ${hour}:00 h`;
 
-	// 🔁 NEW: Update volumes in the DOM
+	// Update volume of LNG for bellina and venosa in the DOM
 	document.getElementById("bellina-volume").innerText = vessel_a.volume.toFixed(0);
 	document.getElementById("venosa-volume").innerText = vessel_b.volume.toFixed(0);
+
+	//colour warning (red if volume of LNG is less than 100)
+	document.getElementById("bellina-volume").style.color = vessel_a.volume < 100 ? "red" : "black";
+	document.getElementById("venosa-volume").style.color = vessel_b.volume < 100 ? "red" : "black";
 }
 
 //updates speed of simulation smoothly, without redrawing window
