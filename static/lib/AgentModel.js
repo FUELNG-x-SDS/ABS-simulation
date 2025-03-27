@@ -62,6 +62,22 @@ var vessels = [
 var vessel_a = vessels[0];
 var vessel_b = vessels[1];
 
+//Counters for ship types per vessel
+let shipServicedCounts = {
+	bellina: {
+		container: 0,
+		bulkcarrier: 0,
+		carcarrier: 0,
+		oiltanker: 0
+	},
+	venosa: {
+		container: 0,
+		bulkcarrier: 0,
+		carcarrier: 0,
+		oiltanker: 0
+	}
+};
+
 // Section our screen into different areas
 var areas =[
  {"label":"LNG Facility","startRow":1,"numRows":5,"startCol":1,"numCols":1,"color":"#b3b3b3"},
@@ -86,7 +102,7 @@ var statistics = [
 // The probability of a patient arrival needs to be less than the probability of a departure, else an infinite queue will build.
 // You also need to allow travel time for patients to move from their seat in the waiting room to get close to the doctor.
 // So don't set probDeparture too close to probArrival.
-var probArrival = 0.1;
+var probArrival = 0.05;
 var probDeparture = 0.4;
 
 // We can have different types of patients (A and B) according to a probability, probTypeA.
@@ -423,7 +439,7 @@ function updateShip(shipIndex){
 				vessel.volume -= amountUsed;
 				if (vessel.volume < 0) vessel.volume = 0;
 
-				console.log(`${vessel.label} serviced ${ship.type}, used ${amountUsed} m³ LNG, remaining: ${vessel.volume} m³`);
+				//Count n
 			}
 
 			// setTimeout(function() {
