@@ -12,11 +12,17 @@ var cellWidth; // Calculated in redrawWindow function
 var cellHeight;
 
 // Icons initialisation
-const iconShipForward = "static/images/ship_forward.png";
-const iconShipBackward = "static/images/ship_backward.png";
+const iconContainerForward = "static/images/container_forward.png";
+const iconContainerBackward = "static/images/container_backward.png";
 const iconVesselForward = "static/images/vessel_forward.png";
 const iconVesselBackward = "static/images/vessel_backward.png";
 const iconTank = "static/images/tank.png";
+const iconBulkCarrierForward = "static/images/bulkcarrier_forward.png";
+const iconBulkCarrierBackward = "static/images/bulkcarrier_backward.png";
+const iconCarShipForward = "static/images/carship_forward.png";
+const iconCarShipBackward = "static/images/carship_backward.png";
+const iconOilTankerForward = "static/images/oiltanker_forward.png";
+const iconOilTankerBackward = "static/images/oiltanker_backward.png";
 
 
 // Define fixed areas
@@ -33,6 +39,7 @@ var seaCol = 11;
 const RIGGING=0;
 const ARRIVAL=1;
 const RETURN=5; 
+const REFUELLING=6;
 
 // Ship states
 const MOORING=0;
@@ -49,11 +56,27 @@ const COMPLETE=4;
 var ships = [];
 // Vessel is a static list, populated with Vessel A and Vessel B	
 var vessels = [
-    {"type":0,"label":"Vessel A","location":{"row":2,"col":2},"target":{"row":2,"col":2},"state":RIGGING},
-	{"type":1,"label":"Vessel B","location":{"row":4,"col":2},"target":{"row":4,"col":2},"state":RIGGING}
+    {"type":0,"label":"Vessel Bellina","location":{"row":2,"col":2},"target":{"row":2,"col":2},"state":RIGGING, "volume":7000, "maxvolume":7000},
+	{"type":1,"label":"Vessel Venosa","location":{"row":4,"col":2},"target":{"row":4,"col":2},"state":RIGGING, "volume":16800, "maxvolume":16800}
 ];
 var vessel_a = vessels[0];
 var vessel_b = vessels[1];
+
+//Counters for ship types per vessel
+let shipServicedCounts = {
+	bellina: {
+		container: 0,
+		bulkcarrier: 0,
+		carcarrier: 0,
+		oiltanker: 0
+	},
+	venosa: {
+		container: 0,
+		bulkcarrier: 0,
+		carcarrier: 0,
+		oiltanker: 0
+	}
+};
 
 // Section our screen into different areas
 var areas =[
@@ -79,7 +102,7 @@ var statistics = [
 // The probability of a patient arrival needs to be less than the probability of a departure, else an infinite queue will build.
 // You also need to allow travel time for patients to move from their seat in the waiting room to get close to the doctor.
 // So don't set probDeparture too close to probArrival.
-var probArrival = 0.1;
+var probArrival = 0.05;
 var probDeparture = 0.4;
 
 // We can have different types of patients (A and B) according to a probability, probTypeA.
@@ -117,10 +140,10 @@ function toggleSimStep(){
 }
 
 function redrawWindow(){
-	isRunning = false; // used by simStep
-	window.clearInterval(simTimer); // clear the Timer
-	animationDelay = 550 - document.getElementById("slider1").value;
-	simTimer = window.setInterval(simStep, animationDelay); // call the function simStep every animationDelay milliseconds
+	// isRunning = false; // used by simStep
+	// window.clearInterval(simTimer); // clear the Timer
+	// animationDelay = 550 - document.getElementById("slider1").value;
+	// simTimer = window.setInterval(simStep, animationDelay); // call the function simStep every animationDelay milliseconds
 	
 	// Re-initialize simulation variables
 	currentTime = 0;
@@ -145,8 +168,8 @@ function redrawWindow(){
 	var surfaceHeight= (h - 3*WINDOWBORDERSIZE);
 	// console.log(surfaceHeight);
 	
-	drawsurface.style.width = surfaceWidth+"px";
-	drawsurface.style.height = surfaceHeight+"px";
+	// drawsurface.style.width = surfaceWidth+"px";
+	// drawsurface.style.height = surfaceHeight+"px";
 	drawsurface.style.left = WINDOWBORDERSIZE/2+'px';
 	drawsurface.style.top = WINDOWBORDERSIZE/2+'px';
 	// drawsurface.style.border = "thick solid #0000FF"; //for debugging
@@ -254,7 +277,18 @@ function updateSurface(){
 	 .attr("y",function(d){var cell= getLocationCell(d.location); return cell.y+"px";})
 	 .attr("width", Math.min(cellWidth,cellHeight)+"px")
 	 .attr("height", Math.min(cellWidth,cellHeight)+"px")
-	 .attr("xlink:href",function(d){return iconShipForward;});
+	 .attr("xlink:href",function(d){
+		switch (d.type) {
+			case "carship":
+				return iconCarShipForward;
+			case "bulkcarrier":
+				return iconBulkCarrierForward;
+			case "oiltanker":
+				return iconOilTankerForward;
+			case "container":
+				return iconContainerForward;
+		}
+	 });
 	
 	// For the existing ships --> update their location on the screen --> transition
 	// First, we select the image elements in the allships list
@@ -265,11 +299,18 @@ function updateSurface(){
 	 .attr("x",function(d){var cell= getLocationCell(d.location); return cell.x+"px";})
 	 .attr("y",function(d){var cell= getLocationCell(d.location); return cell.y+"px";})
 	 .attr("xlink:href",function(d){
-		if (d.state == COMPLETE || d.state == UNMOORING) {
-			return iconShipBackward;
-		} else {
-			return iconShipForward;
-		}})
+		switch (d.type) {
+			case "carship":
+				return (d.state === COMPLETE || d.state === UNMOORING) ? iconCarShipBackward : iconCarShipForward;	
+			case "bulkcarrier":
+				return (d.state === COMPLETE || d.state === UNMOORING) ? iconBulkCarrierBackward : iconBulkCarrierForward;
+			case "oiltanker":
+				return (d.state === COMPLETE || d.state === UNMOORING) ? iconOilTankerBackward : iconOilTankerForward;
+			case "container":
+				return (d.state === COMPLETE || d.state === UNMOORING) ? iconContainerBackward : iconContainerForward;
+
+		}
+	 })
 	 .duration(animationDelay).ease('linear'); // This specifies the speed and type of transition we want.
  
 	
@@ -315,13 +356,15 @@ function addDynamicAgents(){
 			}
 
 			// Create the new ship object with the following initialised properties
-			var newship = {"id":1,
+			var newship = {"id": nextShipID++,
+							"type": ["carship", "bulkcarrier", "oiltanker","container"][getRandomInt(0,3)], //randomly chooses one of the four types of ships
 							"location":{"row":4,"col":11},
 							"target":{"row":port[1],"col":port[2]},
 							"state":MOORING,
 							"timeAdmitted":0,
 							"port": port[0],
 							"exit":{"row":seaRowExit,"col":seaCol}};
+							
 			// console.log(newship);
 			ships.push(newship);
 		}
@@ -390,6 +433,13 @@ function updateShip(shipIndex){
 			if ((currentTime - ship.timeAdmitted) >= 4){
 				ship.state = COMPLETE;
 				vessel.state = COMPLETE;
+
+				// Deduct random LNG amount from vessel
+				let amountUsed = getRandomInt(500, 1500); //Range from 500 to 1500
+				vessel.volume -= amountUsed;
+				if (vessel.volume < 0) vessel.volume = 0;
+
+				//Count n
 			}
 
 			// setTimeout(function() {
@@ -414,11 +464,11 @@ function updateShip(shipIndex){
 			vessel.state = RETURN;
 			if (vessel.type == 0){
 				vessel.target.row = 2;
-				vessel.target.col = 2;
+				vessel.target.col = 4;
 			}
 			else{
 				vessel.target.row = 4;
-				vessel.target.col = 2;
+				vessel.target.col = 4;
 			}
 
 			var timeBunkering = currentTime - ship.timeAdmitted;
@@ -523,6 +573,22 @@ function updateVessel(vesselIndex){
 
 		case RETURN:
 			if (hasArrived){
+				if (vessel.volume < 100){
+					vessel.state = REFUELLING;
+					vessel.target = (vessel.type === 0)
+					? {row: 2, col: 2} //Tank for Bellina
+					: {row: 4, col: 2} //Tank for Venosa
+					console.log(`${vessel.label} refueled back to ${vessel.volume} m³`);
+				} else{
+				vessel.state = RIGGING;
+				}
+			}
+		break;
+
+		case REFUELLING:
+			if (hasArrived) {
+				vessel.volume = vessel.maxvolume
+				console.log(`${vessel.label} has refueled to ${vessel.volume} m³`);
 				vessel.state = RIGGING;
 			}
 		break;
@@ -575,12 +641,15 @@ function updateDynamicAgents(){
 	updateSurface();	
 }
 
+
 function simStep(){
 	// This function is called by a timer; if running, it executes one simulation step 
 	// The timing interval is set in the page initialization function near the top of this file
 	if (isRunning){ // Toggled by toggleSimStep
 		// Increment current time (for computing statistics)
 		currentTime++;
+		//Updates grey sidebar display
+		updateCurrentCycleDisplay(currentTime);
 		// Sometimes new agents will be created in the following function
 		addDynamicAgents();
 		// In the next function we update each agent
@@ -588,4 +657,33 @@ function simStep(){
 		// Sometimes agents will be removed in the following function
 		removeDynamicAgents();
 	}
+}
+
+//updates Current cycle in grey sidebar
+function updateCurrentCycleDisplay(time){
+	const day = Math.floor(time/24) + 1;
+	const hour = Math.floor(time % 24);
+
+	//Update DOM - match to actual sidebar element IDs
+	document.getElementById("bellina-day").innerText = `Day: ${day}`;
+	document.getElementById("bellina-time").innerText = `Current time: ${hour}:00 h`;
+
+	document.getElementById("venosa-day").innerText = `Day: ${day}`;
+	document.getElementById("venosa-time").innerText = `Current time: ${hour}:00 h`;
+
+	// Update volume of LNG for bellina and venosa in the DOM
+	document.getElementById("bellina-volume").innerText = vessel_a.volume.toFixed(0);
+	document.getElementById("venosa-volume").innerText = vessel_b.volume.toFixed(0);
+
+	//colour warning (red if volume of LNG is less than 100)
+	document.getElementById("bellina-volume").style.color = vessel_a.volume < 100 ? "red" : "black";
+	document.getElementById("venosa-volume").style.color = vessel_b.volume < 100 ? "red" : "black";
+}
+
+//updates speed of simulation smoothly, without redrawing window
+function updateSpeedOnly() {
+	const newDelay = Math.max(50, 550 - document.getElementById("slider1").value);
+	clearInterval(simTimer);
+	simTimer = setInterval(simStep, newDelay);
+	animationDelay = newDelay;
 }

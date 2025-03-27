@@ -4,3 +4,49 @@ body {
     font-family: 'IBM Plex Sans', sans-serif;
     font-style: normal;
 }
+
+/*container contains simulation and sidebar*/
+#container{
+    display: flex;
+    height: 88vh;
+
+}
+
+/*grey sidebar*/
+#sidebar{
+    width: 280px;
+    background-color:#f2f2f2;
+    padding: 10px; 
+    font-size: 15px;
+    line-height: 1;
+    margin-top: -10px;
+    
+}
+
+/*spacing of p words in sidebar*/
+#sidebar p {
+    margin-top: 1px;
+    margin-bottom: 4px;
+}
+
+#speed-section{
+    width: 280px;
+    background-color: #d3d3d3;
+    padding: 10px;
+    box-sizing: border-box;
+    text-align: center;
+}
+
+
+/*space for main simulation*/
+#main-simulation{
+    flex-grow: 1; /* Takes remaining space*/
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: white;
+    padding: 10px;
+}
+
+
+
