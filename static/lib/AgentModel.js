@@ -152,6 +152,24 @@ function redrawWindow(){
 	vessel_b.state=RIGGING;
 	ships = [];
 
+	// Reset counters
+	shipServicedCounts = {
+		bellina: {
+			container: 0,
+			bulkcarrier: 0,
+			carcarrier: 0,
+			oiltanker: 0
+		},
+		venosa: {
+			container: 0,
+			bulkcarrier: 0,
+			carcarrier: 0,
+			oiltanker: 0
+		}
+	};
+	
+	updateShipCounters();
+
 	// Remember to fix the statistics here
 	statistics[0].cumulativeValue=0;
 	statistics[0].count=0;
@@ -338,38 +356,46 @@ function updateSurface(){
 	
 
 function addDynamicAgents(){
-	// Create a ship
-	if (Math.random()< probArrival){
-		// Do not accept any ships if ports are full
-		if (portAVacancy===true || portBVacancy===true){
-			// Assign the empty port to the incoming ship
-			if (portAVacancy===true){
-				var port = [0, portARow, portACol];
-				seaRowExit = getRandomInt(1, 2); // Assign ship exit from port A
-				portAVacancy = false; // Update the port states
-				}
-			
-			else if (portBVacancy===true){
-				var port = [1, portBRow, portBCol];
-				seaRowExit = getRandomInt(4, 5) // Assign ship exit from port B
-				portBVacancy = false; // Update the port states
-			}
+    // Create a ship
+    if (Math.random()< probArrival){
+        // Do not accept any ships if ports are full
+        if (portAVacancy===true || portBVacancy===true){
+            // Randomly choose a ship type
+            const shipTypes = ["carship", "bulkcarrier", "oiltanker", "container"];
+            const shipType = shipTypes[getRandomInt(0, 3)];
+            
+            // Determine which ports can service this ship type
+            const canServicePortA = (shipType === "carship" || shipType === "bulkcarrier");
+            const canServicePortB = true; // Venosa can service all types
+            
+            // Assign to an available port that can service this ship
+            if (portAVacancy && canServicePortA) {
+                var port = [0, portARow, portACol];
+                seaRowExit = getRandomInt(1, 2);
+                portAVacancy = false;
+            } else if (portBVacancy && canServicePortB) {
+                var port = [1, portBRow, portBCol];
+                seaRowExit = getRandomInt(4, 5);
+                portBVacancy = false;
+            } else {
+                return; // No available port can service this ship
+            }
 
-			// Create the new ship object with the following initialised properties
-			var newship = {"id": nextShipID++,
-							"type": ["carship", "bulkcarrier", "oiltanker","container"][getRandomInt(0,3)], //randomly chooses one of the four types of ships
-							"location":{"row":4,"col":11},
-							"target":{"row":port[1],"col":port[2]},
-							"state":MOORING,
-							"timeAdmitted":0,
-							"port": port[0],
-							"exit":{"row":seaRowExit,"col":seaCol}};
-							
-			// console.log(newship);
-			ships.push(newship);
-		}
-	}
-	
+            // Create the new ship object
+            var newship = {
+                "id": nextShipID++,
+				"type": ["carship", "bulkcarrier", "oiltanker","container"][getRandomInt(0,3)], //randomly chooses one of the four types of ships
+                "location":{"row":4,"col":11},
+                "target":{"row":port[1],"col":port[2]},
+                "state":MOORING,
+                "timeAdmitted":0,
+                "port": port[0],
+                "exit":{"row":seaRowExit,"col":seaCol}
+            };
+            
+            ships.push(newship);
+        }
+    }
 }
 
 function updateShip(shipIndex){
@@ -439,7 +465,15 @@ function updateShip(shipIndex){
 				vessel.volume -= amountUsed;
 				if (vessel.volume < 0) vessel.volume = 0;
 
-				//Count n
+				// Count the ship type for the vessel
+				if (ship.port == 0) { // Vessel Bellina
+					shipServicedCounts.bellina[ship.type]++;
+				} else { // Vessel Venosa
+					shipServicedCounts.venosa[ship.type]++;
+				}
+				
+				// Update the DOM counters
+				updateShipCounters();
 			}
 
 			// setTimeout(function() {
@@ -678,6 +712,21 @@ function updateCurrentCycleDisplay(time){
 	//colour warning (red if volume of LNG is less than 100)
 	document.getElementById("bellina-volume").style.color = vessel_a.volume < 100 ? "red" : "black";
 	document.getElementById("venosa-volume").style.color = vessel_b.volume < 100 ? "red" : "black";
+}
+
+//updates Ship count in grey sidebar
+function updateShipCounters() {
+    // Update Venosa counters
+    document.getElementById("venosa-container-count").innerText = `Container vessel: ${shipServicedCounts.venosa.container}`;
+    document.getElementById("venosa-bulkcarrier-count").innerText = `Bulk Carrier: ${shipServicedCounts.venosa.bulkcarrier}`;
+    document.getElementById("venosa-carcarrier-count").innerText = `Car Carrier: ${shipServicedCounts.venosa.carcarrier}`;
+    document.getElementById("venosa-oiltanker-count").innerText = `Oil tanker: ${shipServicedCounts.venosa.oiltanker}`;
+    
+    // Update Bellina counters
+    document.getElementById("bellina-container-count").innerText = `Container vessel: ${shipServicedCounts.bellina.container}`;
+    document.getElementById("bellina-bulkcarrier-count").innerText = `Bulk Carrier: ${shipServicedCounts.bellina.bulkcarrier}`;
+    document.getElementById("bellina-carcarrier-count").innerText = `Car Carrier: ${shipServicedCounts.bellina.carcarrier}`;
+    document.getElementById("bellina-oiltanker-count").innerText = `Oil tanker: ${shipServicedCounts.bellina.oiltanker}`;
 }
 
 //updates speed of simulation smoothly, without redrawing window
