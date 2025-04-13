@@ -6,8 +6,8 @@ var surface; // Set in the redrawWindow function (D3 selection of the svg drawin
 var simTimer; // Set in the initialization function
 
 // Drawing surface will be divided into logical cells
-var maxCols = 11;
-var maxRows = 5;
+var maxCols = 10;
+var maxRows = 6;
 var cellWidth; // Calculated in redrawWindow function
 var cellHeight;
 
@@ -19,8 +19,8 @@ const iconVesselBackward = "static/images/vessel_backward.png";
 const iconTank = "static/images/tank.png";
 const iconBulkCarrierForward = "static/images/bulkcarrier_forward.png";
 const iconBulkCarrierBackward = "static/images/bulkcarrier_backward.png";
-const iconCarShipForward = "static/images/carship_forward.png";
-const iconCarShipBackward = "static/images/carship_backward.png";
+const iconCarCarrierForward = "static/images/carcarrier_forward.png";
+const iconCarCarrierBackward = "static/images/carcarrier_backward.png";
 const iconOilTankerForward = "static/images/oiltanker_forward.png";
 const iconOilTankerBackward = "static/images/oiltanker_backward.png";
 const iconRepairForward = "static/images/repair_forward.png";
@@ -55,21 +55,18 @@ const SAFETY_CHECK=2;
 const BUNKERING =3;
 const COMPLETE=4;
 
-const BROKEN = 7;
-const REPAIRING = 8;
-const IN_FACILITY = 9;
 
 // Ship is a dynamic list, initially empty
 var ships = [];
 // Vessel is a static list, populated with Vessel A and Vessel B	
 var vessels = [
     {"type":0,"label":"Vessel Bellina","location":{"row":2,"col":2},"target":{"row":2,"col":2},"state":RIGGING, "volume":7000, "maxvolume":7000},
-    {"type":1,"label":"Vessel Venosa","location":{"row":4,"col":2},"target":{"row":4,"col":2},"state":RIGGING, "volume":16800, "maxvolume":16800},
-    {"type":2,"label":"Repair Vessel","location":{"row":1,"col":2},"target":{"row":1,"col":2},"state":RIGGING, "volume":0, "maxvolume":0}
+    {"type":1,"label":"Vessel Venosa","location":{"row":4,"col":2},"target":{"row":4,"col":2},"state":RIGGING, "volume":16800, "maxvolume":16800}
 ];
 var vessel_a = vessels[0];
 var vessel_b = vessels[1];
-var repair_vessel = vessels[2];
+
+var repair_vessel = {"type":2,"label":"Repair Vessel","location":{"row":1,"col":2},"target":{"row":1,"col":2},"state":RIGGING, "volume":0, "maxvolume":0};
 
 //Counters for ship types per vessel
 let shipServicedCounts = {
@@ -89,10 +86,10 @@ let shipServicedCounts = {
 
 // Section our screen into different areas
 var areas =[
- {"label":"LNG Facility","startRow":1,"numRows":5,"startCol":1,"numCols":1,"color":"#b3b3b3"},
- {"label":"Port","startRow":1,"numRows":5,"startCol":2,"numCols":8,"color":"#00c1e1"},
- {"label":"Sea_shallow","startRow":1,"numRows":5,"startCol":9,"numCols":2,"color":"#00c1e1"},
- {"label":"Sea_deep","startRow":1,"numRows":5,"startCol":11,"numCols":1,"color":"#27a8df"}	
+ {"label":"LNG Facility","startRow":1,"numRows":6,"startCol":1,"numCols":1,"color":"#b3b3b3"},
+ {"label":"Port","startRow":1,"numRows":6,"startCol":2,"numCols":8,"color":"#00c1e1"},
+ {"label":"Sea_shallow","startRow":1,"numRows":6,"startCol":9,"numCols":2,"color":"#00c1e1"},
+ {"label":"Sea_deep","startRow":1,"numRows":6,"startCol":11,"numCols":1,"color":"#27a8df"}	
 ]
 
 var tanks =[
@@ -269,12 +266,7 @@ function updateSurface() {
         .attr("width", Math.min(cellWidth / 1.75, cellHeight / 1.75) + "px")
         .attr("height", Math.min(cellWidth / 1.75, cellHeight / 1.75) + "px")
         .attr("xlink:href", function(d) {
-            if (d.type === 2) { // Repair vessel
-                return (d.state === RETURN) ? iconRepairBackward : iconRepairForward;
-            } else { // Regular vessels
-                if (d.state === BROKEN) return iconVesselBackward; // Different icon for broken state?
-                return (d.state === RETURN || d.state === COMPLETE) ? iconVesselBackward : iconVesselForward;
-            }
+            return (d.state === RETURN || d.state === COMPLETE) ? iconVesselBackward : iconVesselForward;
         });
 
     // Add labels
@@ -290,14 +282,33 @@ function updateSurface() {
         .attr("x", function(d) { var cell = getLocationCell(d.location); return cell.x + "px"; })
         .attr("y", function(d) { var cell = getLocationCell(d.location); return cell.y + "px"; })
         .attr("xlink:href", function(d) {
-            if (d.type === 2) { // Repair vessel
-                return (d.state === RETURN) ? iconRepairBackward : iconRepairForward;
-            } else { // Regular vessels
-                if (d.state === BROKEN) return iconVesselBackward; // Different icon for broken state?
-                return (d.state === RETURN || d.state === COMPLETE) ? iconVesselBackward : iconVesselForward;
-            }
+            return (d.state === RETURN || d.state === COMPLETE) ? iconVesselBackward : iconVesselForward;
         })
         .duration(animationDelay).ease('linear');
+
+	// Add repair vessel separately
+	var rv = surface.selectAll(".repair-vessel").data([repair_vessel]);
+	var newrv = rv.enter().append("g").attr("class", "repair-vessel");
+
+	newrv.append("svg:image")
+		.attr("x", d => getLocationCell(d.location).x + "px")
+		.attr("y", d => getLocationCell(d.location).y + "px")
+		.attr("width", Math.min(cellWidth / 1.75, cellHeight / 1.75) + "px")
+		.attr("height", Math.min(cellWidth / 1.75, cellHeight / 1.75) + "px")
+		.attr("xlink:href", d => (d.state === RETURN) ? iconRepairBackward : iconRepairForward);
+
+	newrv.append("text")
+		.attr("x", d => getLocationCell(d.location).x + cellWidth / 2 + "px")
+		.attr("y", d => getLocationCell(d.location).y + cellHeight / 2 + "px")
+		.attr("dy", ".35em")
+		.text(d => d.label);
+
+	rv.selectAll("image").transition()
+		.attr("x", d => getLocationCell(d.location).x + "px")
+		.attr("y", d => getLocationCell(d.location).y + "px")
+		.attr("xlink:href", d => (d.state === RETURN) ? iconRepairBackward : iconRepairForward)
+		.duration(animationDelay).ease('linear');
+		
 
     // Ships layout
     var allships = surface.selectAll(".ship").data(ships);
@@ -311,8 +322,8 @@ function updateSurface() {
         .attr("height", Math.min(cellWidth, cellHeight) + "px")
         .attr("xlink:href", function(d) {
             switch (d.type) {
-                case "carship":
-                    return (d.state === COMPLETE || d.state === UNMOORING) ? iconCarShipBackward : iconCarShipForward;
+                case "carcarrier":
+                    return (d.state === COMPLETE || d.state === UNMOORING) ? iconCarCarrierBackward : iconCarCarrierForward;
                 case "bulkcarrier":
                     return (d.state === COMPLETE || d.state === UNMOORING) ? iconBulkCarrierBackward : iconBulkCarrierForward;
                 case "oiltanker":
@@ -329,8 +340,8 @@ function updateSurface() {
         .attr("y", function(d) { var cell = getLocationCell(d.location); return cell.y + "px"; })
         .attr("xlink:href", function(d) {
             switch (d.type) {
-                case "carship":
-                    return (d.state === COMPLETE || d.state === UNMOORING) ? iconCarShipBackward : iconCarShipForward;
+                case "carcarrier":
+                    return (d.state === COMPLETE || d.state === UNMOORING) ? iconCarCarrierBackward : iconCarCarrierForward;
                 case "bulkcarrier":
                     return (d.state === COMPLETE || d.state === UNMOORING) ? iconBulkCarrierBackward : iconBulkCarrierForward;
                 case "oiltanker":
@@ -363,11 +374,11 @@ function addDynamicAgents(){
         // Do not accept any ships if ports are full
         if (portAVacancy===true || portBVacancy===true){
             // Randomly choose a ship type
-            const shipTypes = ["carship", "bulkcarrier", "oiltanker", "container"];
+            const shipTypes = ["carcarrier", "bulkcarrier", "oiltanker", "container"];
             const shipType = shipTypes[getRandomInt(0, 3)];
             
             // Determine which ports can service this ship type
-            const canServicePortA = (shipType === "carship" || shipType === "bulkcarrier");
+            const canServicePortA = (shipType === "carcarrier" || shipType === "bulkcarrier");
             const canServicePortB = true; // Venosa can service all types
             
             // Assign to an available port that can service this ship
@@ -386,7 +397,7 @@ function addDynamicAgents(){
             // Create the new ship object
             var newship = {
                 "id": nextShipID++,
-				"type": ["carship", "bulkcarrier", "oiltanker","container"][getRandomInt(0,3)], //randomly chooses one of the four types of ships
+				"type": ["carcarrier", "bulkcarrier", "oiltanker","container"][getRandomInt(0,3)], //randomly chooses one of the four types of ships
                 "location":{"row":4,"col":11},
                 "target":{"row":port[1],"col":port[2]},
                 "state":MOORING,
@@ -445,14 +456,7 @@ function updateShip(shipIndex){
 
 		// In updateShip function, modify the SAFETY_CHECK case:
 		case SAFETY_CHECK:
-			// Wait till vessel arrives then perform safety check
-			if (vessel.state === BROKEN || vessel.state === IN_FACILITY) {
-				// If vessel is broken, ship should leave
-				ship.state = UNMOORING;
-				ship.target = ship.exit;
-				portAVacancy = ship.port === 0;
-				portBVacancy = ship.port === 1;
-			} else if (vessel.state === SAFETY_CHECK) {
+			if (vessel.state === SAFETY_CHECK) {
 				if ((currentTime - ship.timeAdmitted) >= 2){
 					ship.state = BUNKERING;
 					vessel.state = BUNKERING;
@@ -589,170 +593,122 @@ function updateShip(shipIndex){
 }
 
 function updateVessel(vesselIndex) {
-    vesselIndex = Number(vesselIndex);
-    var vessel = vessels[vesselIndex];
-    var row = vessel.location.row;
-    var col = vessel.location.col;
-    var state = vessel.state;
-    var hasArrived = (Math.abs(vessel.target.row - row) + Math.abs(vessel.target.col - col)) == 0;
+	vesselIndex = Number(vesselIndex);
+	var vessel = vessels[vesselIndex];
+	if (vessel.type === 2) return; // Skip repair vessel, now handled separately
 
-    // Random failure chance (1% per step) for non-repair vessels that aren't already broken or in facility
-    if (vessel.type !== 2 && Math.random() < 0.01 && state !== BROKEN && state !== IN_FACILITY && state !== REFUELLING) {
-        vessel.state = BROKEN;
-        console.log(`${vessel.label} has broken down!`);
-        
-        // Free up the port if this vessel was servicing a ship
-        if (vessel.type === 0) {
-            portAVacancy = true;
-        } else if (vessel.type === 1) {
-            portBVacancy = true;
-        }
-        return; // Don't move if broken
-    }
+	var row = vessel.location.row;
+	var col = vessel.location.col;
+	var state = vessel.state;
+	var hasArrived = (Math.abs(vessel.target.row - row) + Math.abs(vessel.target.col - col)) == 0;
 
-    // Repair vessel specific logic
-    if (vessel.type === 2) {
-        switch (state) {
-            case RIGGING:
-                // Check if any vessel is broken and needs repair
-                var brokenVessel = vessels.find(v => 
-                    v.type !== 2 && 
-                    v.state === BROKEN && 
-                    (v.location.row !== facilityLocation.row || v.location.col !== facilityLocation.col)
-                );
-                if (brokenVessel) {
-                    vessel.state = ARRIVAL;
-                    vessel.target = brokenVessel.location;
-                }
-                break;
-
-            case ARRIVAL:
-                if (hasArrived) {
-                    // Find the broken vessel at this location
-                    var brokenVessel = vessels.find(v => 
-                        v.state === BROKEN && 
-                        v.location.row === row && 
-                        v.location.col === col
-                    );
-                    
-                    if (brokenVessel) {
-                        // Set both vessels to return to facility
-                        brokenVessel.state = RETURN;
-                        brokenVessel.target = facilityLocation;
-                        vessel.state = RETURN;
-                        vessel.target = facilityLocation;
-                    } else {
-                        // No broken vessel found, return home
-                        vessel.state = RIGGING;
-                        vessel.target = {"row":1,"col":2};
-                    }
-                }
-                break;
-
-            case RETURN:
-                if (hasArrived) {
-                    // Check if we have a broken vessel with us
-                    var repairedVessel = vessels.find(v => 
-                        v.state === RETURN && 
-                        v.location.row === row && 
-                        v.location.col === col &&
-                        v.type !== 2
-                    );
-                    
-                    if (repairedVessel) {
-                        repairedVessel.state = IN_FACILITY;
-                        repairedVessel.timeAdmitted = currentTime;
-                    }
-                    vessel.state = RIGGING;
-                    vessel.target = {"row":1,"col":2};
-                }
-                break;
-        }
-    } 
-    // Regular vessel logic (Bellina and Venosa)
-    else {
-        switch (state) {
-            case ARRIVAL:
-                if (hasArrived) {
-                    vessel.state = SAFETY_CHECK;
-                }
+	switch (state) {
+		case ARRIVAL:
+			if (hasArrived) {
+				vessel.state = SAFETY_CHECK;
+			}
 			break;
 
-            case RETURN:
-                if (hasArrived) {
-                    if (vessel.location.row === facilityLocation.row && vessel.location.col === facilityLocation.col) {
-                        // We've arrived at facility for repairs
-                        vessel.state = IN_FACILITY;
-                        vessel.timeAdmitted = currentTime;
-                    } else {
-                        // Normal return to home position
-                        if (vessel.volume < 100) {
-                            vessel.state = REFUELLING;
-                            vessel.target = (vessel.type === 0) ?
-                                {"row":2,"col":2} : // Tank for Bellina
-                                {"row":4,"col":2};  // Tank for Venosa
-                        } else {
-                            vessel.state = RIGGING;
-                        }
-                    }
-                }
-                break;
-
-			case REFUELLING:
-				if (hasArrived) {
-					vessel.volume = vessel.maxvolume;
-					console.log(`${vessel.label} has refueled to ${vessel.volume} m³`);
-					vessel.state = RIGGING;
-				}
-				break;
-
-			case BROKEN:
-				// If repair vessel is coming to us, start moving with it
-				var repairVesselComing = vessels.find(v => 
-					v.type === 2 && 
-					v.state === ARRIVAL && 
-					v.target.row === row && 
-					v.target.col === col
-				);
-				
-				if (repairVesselComing && hasArrived) {
-					state = RETURN;
-					target = facilityLocation;
-				}
-				break;
-			
-			case IN_FACILITY:
-				// Stay in facility for repair time (5 time units)
-				if (currentTime - vessel.timeAdmitted >= 5) {
-					vessel.state = RIGGING;
-					// Return to original target position from vessels array
+		case RETURN:
+			if (hasArrived) {
+				if (vessel.volume < 100) {
+					vessel.state = REFUELLING;
 					vessel.target = (vessel.type === 0) ?
-						{"row":2,"col":2} : // Bellina's home position
-						{"row":4,"col":2};  // Venosa's home position
-					console.log(`${vessel.label} has been repaired and returned to service!`);
+						{ "row": 2, "col": 2 } : // Bellina
+						{ "row": 4, "col": 2 };  // Venosa
+				} else {
+					vessel.state = RIGGING;
 				}
+			}
 			break;
 
-			default:
+		case REFUELLING:
+			if (hasArrived) {
+				vessel.volume = vessel.maxvolume;
+				console.log(`${vessel.label} has refueled to ${vessel.volume} m³`);
+				vessel.state = RIGGING;
+			}
 			break;
-		}
+
+		default:
+			break;
 	}
 
-    // Movement logic for all vessels except when BROKEN or IN_FACILITY
-    if (state !== BROKEN && state !== IN_FACILITY) {
-        var targetRow = vessel.target.row;
-        var targetCol = vessel.target.col;
-        var rowsToGo = targetRow - row;
-        var colsToGo = targetCol - col;
-        var cellsPerStep = 1;
+	// Movement logic
+	var targetRow = vessel.target.row;
+	var targetCol = vessel.target.col;
+	var rowsToGo = targetRow - row;
+	var colsToGo = targetCol - col;
+	var cellsPerStep = 1;
 
-        var newRow = row + Math.min(Math.abs(rowsToGo), cellsPerStep) * Math.sign(rowsToGo);
-        var newCol = col + Math.min(Math.abs(colsToGo), cellsPerStep) * Math.sign(colsToGo);
+	var newRow = row + Math.min(Math.abs(rowsToGo), cellsPerStep) * Math.sign(rowsToGo);
+	var newCol = col + Math.min(Math.abs(colsToGo), cellsPerStep) * Math.sign(colsToGo);
 
-        vessel.location.row = newRow;
-        vessel.location.col = newCol;
-    }
-}	
+	vessel.location.row = newRow;
+	vessel.location.col = newCol;
+}
+
+function updateRepairVessel() {
+	var vessel = repair_vessel;
+	var row = vessel.location.row;
+	var col = vessel.location.col;
+	var state = vessel.state;
+	var hasArrived = (Math.abs(vessel.target.row - row) + Math.abs(vessel.target.col - col)) == 0;
+
+	switch (state) {
+		case RIGGING:
+			var targetShip = ships.find(ship => ship.needsRepair);
+			if (targetShip) {
+				vessel.state = "MOVING_TO_REPAIR";
+				vessel.target = {
+					row: targetShip.location.row,
+					col: targetShip.location.col
+				};
+			}
+			break;
+
+		case "MOVING_TO_REPAIR":
+			if (hasArrived) {
+				vessel.state = "WAITING";
+				vessel.waitStart = currentTime;
+			}
+			break;
+
+		case "WAITING":
+			if (currentTime - vessel.waitStart >= 2) {
+				var repairedShip = ships.find(s =>
+					s.needsRepair &&
+					s.location.row === row &&
+					s.location.col === col
+				);
+				if (repairedShip) {
+					repairedShip.needsRepair = false;
+					repairedShip.bunkeringStartTime = currentTime;
+					console.log(`Repaired ship ${repairedShip.id} at (${row}, ${col})`);
+				}
+				vessel.state = RIGGING;
+				vessel.target = { row: 1, col: 2 }; // Go home
+			}
+			break;
+	}
+
+	// Movement logic for repair vessel (except when WAITING)
+	if (state !== "WAITING") {
+		var targetRow = vessel.target.row;
+		var targetCol = vessel.target.col;
+		var rowsToGo = targetRow - row;
+		var colsToGo = targetCol - col;
+		var cellsPerStep = 1;
+
+		var newRow = row + Math.min(Math.abs(rowsToGo), cellsPerStep) * Math.sign(rowsToGo);
+		var newCol = col + Math.min(Math.abs(colsToGo), cellsPerStep) * Math.sign(colsToGo);
+
+		vessel.location.row = newRow;
+		vessel.location.col = newCol;
+	}
+}
+
+
 
 function removeDynamicAgents(){
 	// We need to remove ships who have been bunkered 
@@ -777,6 +733,11 @@ function updateDynamicAgents(){
 	for (var vesselIndex in vessels){
 		updateVessel(vesselIndex);
 	}
+
+	// Update repair vessel separately
+	updateRepairVessel();
+
+
 	updateSurface();	
 }
 
