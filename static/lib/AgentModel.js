@@ -23,6 +23,9 @@ const iconCarShipForward = "static/images/carship_forward.png";
 const iconCarShipBackward = "static/images/carship_backward.png";
 const iconOilTankerForward = "static/images/oiltanker_forward.png";
 const iconOilTankerBackward = "static/images/oiltanker_backward.png";
+const iconRepairForward = "static/images/repair_forward.png";
+const iconRepairBackward = "static/images/repair_backward.png";
+const iconFacility = "static/images/facility.png";
 
 
 // Define fixed areas
@@ -52,15 +55,21 @@ const SAFETY_CHECK=2;
 const BUNKERING =3;
 const COMPLETE=4;
 
+const BROKEN = 7;
+const REPAIRING = 8;
+const IN_FACILITY = 9;
+
 // Ship is a dynamic list, initially empty
 var ships = [];
 // Vessel is a static list, populated with Vessel A and Vessel B	
 var vessels = [
     {"type":0,"label":"Vessel Bellina","location":{"row":2,"col":2},"target":{"row":2,"col":2},"state":RIGGING, "volume":7000, "maxvolume":7000},
-	{"type":1,"label":"Vessel Venosa","location":{"row":4,"col":2},"target":{"row":4,"col":2},"state":RIGGING, "volume":16800, "maxvolume":16800}
+    {"type":1,"label":"Vessel Venosa","location":{"row":4,"col":2},"target":{"row":4,"col":2},"state":RIGGING, "volume":16800, "maxvolume":16800},
+    {"type":2,"label":"Repair Vessel","location":{"row":1,"col":2},"target":{"row":1,"col":2},"state":RIGGING, "volume":0, "maxvolume":0}
 ];
 var vessel_a = vessels[0];
 var vessel_b = vessels[1];
+var repair_vessel = vessels[2];
 
 //Counters for ship types per vessel
 let shipServicedCounts = {
@@ -91,6 +100,9 @@ var tanks =[
 	{"label":"Tank 2","location":{"row":3,"col":1}},
 	{"label":"Tank 3","location":{"row":4,"col":1}},
    ]
+
+var repairVesselHome = {"row":1,"col":2};
+var facilityLocation = {"row":1,"col":1};
 
 var currentTime = 0;
 // Idk what statistics to use yet
@@ -215,143 +227,133 @@ function getLocationCell(location){
 	return {"x":x,"y":y};
 }
 
-function updateSurface(){
-	// Create or update most of the svg elements on the drawing surface.
-	// Those appended last, will overlay those appended before --> layer matter
-	// removeDynamicAgents() removes svg elements
+function updateSurface() {
+    // Create or update most of the svg elements on the drawing surface
+    // Background layout first
+    var allareas = surface.selectAll(".areas").data(areas);
+    var newareas = allareas.enter().append("g").attr("class", "areas");
+    newareas.append("rect")
+        .attr("x", function(d) { return (d.startCol - 1) * cellWidth; })
+        .attr("y", function(d) { return (d.startRow - 1) * cellHeight; })
+        .attr("width", function(d) { return d.numCols * cellWidth; })
+        .attr("height", function(d) { return d.numRows * cellHeight; })
+        .style("fill", function(d) { return d.color; });
 
-	// Background layout first
-	var allareas = surface.selectAll(".areas").data(areas);
-	var newareas = allareas.enter().append("g").attr("class","areas"); // Create an svg group ("g")
+    // Add the LNG tanks
+    var alltanks = surface.selectAll(".tank").data(tanks);
+    var newtanks = alltanks.enter().append("g").attr("class", "tank");
+    newtanks.append("svg:image")
+        .attr("x", function(d) { var cell = getLocationCell(d.location); return cell.x + "px"; })
+        .attr("y", function(d) { var cell = getLocationCell(d.location); return cell.y + "px"; })
+        .attr("width", Math.min(cellWidth, cellHeight) + "px")
+        .attr("height", Math.min(cellWidth, cellHeight) + "px")
+        .attr("xlink:href", function(d) { return iconTank; });
 
-	// For each new area, append a rectangle to the group
-	newareas.append("rect")
-	.attr("x", function(d){return (d.startCol-1)*cellWidth;})
-	.attr("y",  function(d){return (d.startRow-1)*cellHeight;})
-	.attr("width",  function(d){return d.numCols*cellWidth;})
-	.attr("height",  function(d){return d.numRows*cellHeight;})
-	.style("fill", function(d) { return d.color; })
-	// .style("stroke","black")
-	// .style("stroke-width",1);
+    // Add facility
+	var facility = surface.selectAll(".facility").data([{ label: "Facility", location: facilityLocation }]);
+	var newfacility = facility.enter().append("g").attr("class", "facility");
+	newfacility.append("svg:image")
+		.attr("x", function(d) { var cell = getLocationCell(d.location); return cell.x + "px"; })
+		.attr("y", function(d) { var cell = getLocationCell(d.location); return cell.y + "px"; })
+		.attr("width", Math.min(cellWidth, cellHeight) + "px")
+		.attr("height", Math.min(cellWidth, cellHeight) + "px")
+		.attr("xlink:href", iconFacility);
 
-	// Add the LNG tanks
-	var alltanks = surface.selectAll(".tank").data(tanks);
-	var newtanks = alltanks.enter().append("g").attr("class","tank");
+    // Vessels layout
+    var allvessels = surface.selectAll(".vessel").data(vessels);
+    var newvessels = allvessels.enter().append("g").attr("class", "vessel");
 
-	newtanks.append("svg:image")
-	.attr("x",function(d){var cell= getLocationCell(d.location); return cell.x+"px";})
-	 .attr("y",function(d){var cell= getLocationCell(d.location); return cell.y+"px";})
-	 .attr("width", Math.min(cellWidth,cellHeight)+"px")
-	 .attr("height", Math.min(cellWidth,cellHeight)+"px")
-	 .attr("xlink:href",function(d){return iconTank;});
+    newvessels.append("svg:image")
+        .attr("x", function(d) { var cell = getLocationCell(d.location); return cell.x + "px"; })
+        .attr("y", function(d) { var cell = getLocationCell(d.location); return cell.y + "px"; })
+        .attr("width", Math.min(cellWidth / 1.75, cellHeight / 1.75) + "px")
+        .attr("height", Math.min(cellWidth / 1.75, cellHeight / 1.75) + "px")
+        .attr("xlink:href", function(d) {
+            if (d.type === 2) { // Repair vessel
+                return (d.state === RETURN) ? iconRepairBackward : iconRepairForward;
+            } else { // Regular vessels
+                if (d.state === BROKEN) return iconVesselBackward; // Different icon for broken state?
+                return (d.state === RETURN || d.state === COMPLETE) ? iconVesselBackward : iconVesselForward;
+            }
+        });
 
+    // Add labels
+    newvessels.append("text")
+        .attr("x", function(d) { var cell = getLocationCell(d.location); return (cell.x + cellWidth / 2) + "px"; })
+        .attr("y", function(d) { var cell = getLocationCell(d.location); return (cell.y + cellHeight / 2) + "px"; })
+        .attr("dy", ".35em")
+        .text(function(d) { return d.label; });
 
+    // Update vessel locations and icons
+    var images = allvessels.selectAll("image");
+    images.transition()
+        .attr("x", function(d) { var cell = getLocationCell(d.location); return cell.x + "px"; })
+        .attr("y", function(d) { var cell = getLocationCell(d.location); return cell.y + "px"; })
+        .attr("xlink:href", function(d) {
+            if (d.type === 2) { // Repair vessel
+                return (d.state === RETURN) ? iconRepairBackward : iconRepairForward;
+            } else { // Regular vessels
+                if (d.state === BROKEN) return iconVesselBackward; // Different icon for broken state?
+                return (d.state === RETURN || d.state === COMPLETE) ? iconVesselBackward : iconVesselForward;
+            }
+        })
+        .duration(animationDelay).ease('linear');
 
-	// Vessels layout second --> no need to worry about removing them
-	var allvessels = surface.selectAll(".vessel").data(vessels);
-	var newvessels = allvessels.enter().append("g").attr("class","vessel"); // Create an svg group ("g")
+    // Ships layout
+    var allships = surface.selectAll(".ship").data(ships);
+    allships.exit().remove();
+    var newships = allships.enter().append("g").attr("class", "ship");
 
-	newvessels.append("svg:image")
-	 .attr("x",function(d){var cell= getLocationCell(d.location); return cell.x+"px";})
-	 .attr("y",function(d){var cell= getLocationCell(d.location); return cell.y+"px";})
-	 .attr("width", Math.min(cellWidth/1.75,cellHeight/1.75)+"px")
-	 .attr("height", Math.min(cellWidth/1.75,cellHeight/1.75)+"px")
-	 .attr("xlink:href",function(d){return iconVesselForward});
-	
-	// Add labels
-	newvessels.append("text")
-    .attr("x", function(d) { var cell= getLocationCell(d.location); return (cell.x+cellWidth/2)+"px"; })
-    .attr("y", function(d) { var cell= getLocationCell(d.location); return (cell.y+cellHeight/2)+"px"; })
-    .attr("dy", ".35em")
-    .text(function(d) { return d.label; });
+    newships.append("svg:image")
+        .attr("x", function(d) { var cell = getLocationCell(d.location); return cell.x + "px"; })
+        .attr("y", function(d) { var cell = getLocationCell(d.location); return cell.y + "px"; })
+        .attr("width", Math.min(cellWidth, cellHeight) + "px")
+        .attr("height", Math.min(cellWidth, cellHeight) + "px")
+        .attr("xlink:href", function(d) {
+            switch (d.type) {
+                case "carship":
+                    return (d.state === COMPLETE || d.state === UNMOORING) ? iconCarShipBackward : iconCarShipForward;
+                case "bulkcarrier":
+                    return (d.state === COMPLETE || d.state === UNMOORING) ? iconBulkCarrierBackward : iconBulkCarrierForward;
+                case "oiltanker":
+                    return (d.state === COMPLETE || d.state === UNMOORING) ? iconOilTankerBackward : iconOilTankerForward;
+                case "container":
+                    return (d.state === COMPLETE || d.state === UNMOORING) ? iconContainerBackward : iconContainerForward;
+            }
+        });
 
-	// Update their location on the screen
-	var images = allvessels.selectAll("image");
-	// Next we define a transition for each of these image elements.
-	// Note that we only need to update the attributes of the image element which change
-	images.transition()
-	 .attr("x",function(d){var cell= getLocationCell(d.location); return cell.x+"px";})
-	 .attr("y",function(d){var cell= getLocationCell(d.location); return cell.y+"px";})
-	 .attr("xlink:href",function(d){
-		if (d.state == RETURN || d.state == COMPLETE) {
-			return iconVesselBackward;
-		} else {
-			return iconVesselForward;
-		}})
-	 .duration(animationDelay).ease('linear'); // This specifies the speed and type of transition we want.
+    // Update ship locations and icons
+    var shipImages = allships.selectAll("image");
+    shipImages.transition()
+        .attr("x", function(d) { var cell = getLocationCell(d.location); return cell.x + "px"; })
+        .attr("y", function(d) { var cell = getLocationCell(d.location); return cell.y + "px"; })
+        .attr("xlink:href", function(d) {
+            switch (d.type) {
+                case "carship":
+                    return (d.state === COMPLETE || d.state === UNMOORING) ? iconCarShipBackward : iconCarShipForward;
+                case "bulkcarrier":
+                    return (d.state === COMPLETE || d.state === UNMOORING) ? iconBulkCarrierBackward : iconBulkCarrierForward;
+                case "oiltanker":
+                    return (d.state === COMPLETE || d.state === UNMOORING) ? iconOilTankerBackward : iconOilTankerForward;
+                case "container":
+                    return (d.state === COMPLETE || d.state === UNMOORING) ? iconContainerBackward : iconContainerForward;
+            }
+        })
+        .duration(animationDelay).ease('linear');
 
-	
-	// Ships layout third
-	var allships = surface.selectAll(".ship").data(ships);
-	// If the list of svg elements is longer than the data list, the excess elements are in the .exit() list
-	// Excess elements need to be removed:
-	allships.exit().remove(); // Needed when we resize window and re-initialize ships array
-	// If the list of svg elements is shorter than the data list, the new elements are in the .enter() list.
-	// The first time this is called, all the elements of data will be in the .enter() list.
-	var newships = allships.enter().append("g").attr("class","ship"); 
+    // Statistics layer
+    var allstatistics = surface.selectAll(".statistics").data(statistics);
+    var newstatistics = allstatistics.enter().append("g").attr("class", "statistics");
+    newstatistics.append("text")
+        .attr("x", function(d) { var cell = getLocationCell(d.location); return (cell.x + cellWidth / 2) + "px"; })
+        .attr("y", function(d) { var cell = getLocationCell(d.location); return (cell.y + cellHeight / 2) + "px"; })
+        .attr("dy", ".35em")
+        .text("");
 
-	newships.append("svg:image")
-	 .attr("x",function(d){var cell= getLocationCell(d.location); return cell.x+"px";})
-	 .attr("y",function(d){var cell= getLocationCell(d.location); return cell.y+"px";})
-	 .attr("width", Math.min(cellWidth,cellHeight)+"px")
-	 .attr("height", Math.min(cellWidth,cellHeight)+"px")
-	 .attr("xlink:href",function(d){
-		switch (d.type) {
-			case "carship":
-				return iconCarShipForward;
-			case "bulkcarrier":
-				return iconBulkCarrierForward;
-			case "oiltanker":
-				return iconOilTankerForward;
-			case "container":
-				return iconContainerForward;
-		}
-	 });
-	
-	// For the existing ships --> update their location on the screen --> transition
-	// First, we select the image elements in the allships list
-	var images = allships.selectAll("image");
-	// Next we define a transition for each of these image elements.
-	// Note that we only need to update the attributes of the image element which change
-	images.transition()
-	 .attr("x",function(d){var cell= getLocationCell(d.location); return cell.x+"px";})
-	 .attr("y",function(d){var cell= getLocationCell(d.location); return cell.y+"px";})
-	 .attr("xlink:href",function(d){
-		switch (d.type) {
-			case "carship":
-				return (d.state === COMPLETE || d.state === UNMOORING) ? iconCarShipBackward : iconCarShipForward;	
-			case "bulkcarrier":
-				return (d.state === COMPLETE || d.state === UNMOORING) ? iconBulkCarrierBackward : iconBulkCarrierForward;
-			case "oiltanker":
-				return (d.state === COMPLETE || d.state === UNMOORING) ? iconOilTankerBackward : iconOilTankerForward;
-			case "container":
-				return (d.state === COMPLETE || d.state === UNMOORING) ? iconContainerBackward : iconContainerForward;
-
-		}
-	 })
-	 .duration(animationDelay).ease('linear'); // This specifies the speed and type of transition we want.
- 
-	
-	// Statistics layer
-	// The simulation should serve some purpose 
-	// so we will compute and display the average length of stay of each patient type.
-	// We created the array "statistics" for this purpose.
-	// Here we will create a group for each element of the statistics array (two elements)
-	var allstatistics = surface.selectAll(".statistics").data(statistics);
-
-	var newstatistics = allstatistics.enter().append("g").attr("class","statistics");
-
-	newstatistics.append("text")
-	.attr("x", function(d) { var cell= getLocationCell(d.location); return (cell.x+cellWidth/2)+"px"; })
-    .attr("y", function(d) { var cell= getLocationCell(d.location); return (cell.y+cellHeight/2)+"px"; })
-    .attr("dy", ".35em")
-    .text(""); 
-	
-	// The data in the statistics array are always being updated.
-	// So, here we update the text in the labels with the updated information.
-	allstatistics.selectAll("text").text(function(d) {
-		var avgLengthOfStay = d.cumulativeValue/(Math.max(1,d.count)); // cumulativeValue and count for each statistic are always changing
-		return d.name+avgLengthOfStay.toFixed(1); }); //The toFixed() function sets the number of decimal places to display
+    allstatistics.selectAll("text").text(function(d) {
+        var avgLengthOfStay = d.cumulativeValue / (Math.max(1, d.count));
+        return d.name + avgLengthOfStay.toFixed(1);
+    });
 }
 	
 
@@ -441,12 +443,16 @@ function updateShip(shipIndex){
 			}
 		break;
 
+		// In updateShip function, modify the SAFETY_CHECK case:
 		case SAFETY_CHECK:
 			// Wait till vessel arrives then perform safety check
-			console.log("currentTime");
-			console.log(currentTime);
-			if (vessel.state == SAFETY_CHECK){
-				// Pause for 2 sec == 2hr
+			if (vessel.state === BROKEN || vessel.state === IN_FACILITY) {
+				// If vessel is broken, ship should leave
+				ship.state = UNMOORING;
+				ship.target = ship.exit;
+				portAVacancy = ship.port === 0;
+				portBVacancy = ship.port === 1;
+			} else if (vessel.state === SAFETY_CHECK) {
 				if ((currentTime - ship.timeAdmitted) >= 2){
 					ship.state = BUNKERING;
 					vessel.state = BUNKERING;
@@ -582,72 +588,171 @@ function updateShip(shipIndex){
 	console.log(portBVacancy);
 }
 
-function updateVessel(vesselIndex){
-	vesselIndex = Number(vesselIndex);
-	var vessel = vessels[vesselIndex];
+function updateVessel(vesselIndex) {
+    vesselIndex = Number(vesselIndex);
+    var vessel = vessels[vesselIndex];
+    var row = vessel.location.row;
+    var col = vessel.location.col;
+    var state = vessel.state;
+    var hasArrived = (Math.abs(vessel.target.row - row) + Math.abs(vessel.target.col - col)) == 0;
 
-	// Get current location of vessel
-	var row = vessel.location.row;
-	var col = vessel.location.col;
-	// var type = ship.type;
-	var state = vessel.state;
-	
-	// Determine if vessel has arrived at destination
-	var hasArrived = (Math.abs(vessel.target.row-row)+Math.abs(vessel.target.col-col))==0;
-	
-	console.log("vessel state");
-	console.log(state)
-	switch(state){
-		case ARRIVAL:
-			if (hasArrived){
-				// vessel.timeAdmitted = currentTime;
-				vessel.state = SAFETY_CHECK;
-			}
-		break;
+    // Random failure chance (1% per step) for non-repair vessels that aren't already broken or in facility
+    if (vessel.type !== 2 && Math.random() < 0.01 && state !== BROKEN && state !== IN_FACILITY && state !== REFUELLING) {
+        vessel.state = BROKEN;
+        console.log(`${vessel.label} has broken down!`);
+        
+        // Free up the port if this vessel was servicing a ship
+        if (vessel.type === 0) {
+            portAVacancy = true;
+        } else if (vessel.type === 1) {
+            portBVacancy = true;
+        }
+        return; // Don't move if broken
+    }
 
-		case RETURN:
-			if (hasArrived){
-				if (vessel.volume < 100){
-					vessel.state = REFUELLING;
-					vessel.target = (vessel.type === 0)
-					? {row: 2, col: 2} //Tank for Bellina
-					: {row: 4, col: 2} //Tank for Venosa
-					console.log(`${vessel.label} refueled back to ${vessel.volume} m³`);
-				} else{
-				vessel.state = RIGGING;
+    // Repair vessel specific logic
+    if (vessel.type === 2) {
+        switch (state) {
+            case RIGGING:
+                // Check if any vessel is broken and needs repair
+                var brokenVessel = vessels.find(v => 
+                    v.type !== 2 && 
+                    v.state === BROKEN && 
+                    (v.location.row !== facilityLocation.row || v.location.col !== facilityLocation.col)
+                );
+                if (brokenVessel) {
+                    vessel.state = ARRIVAL;
+                    vessel.target = brokenVessel.location;
+                }
+                break;
+
+            case ARRIVAL:
+                if (hasArrived) {
+                    // Find the broken vessel at this location
+                    var brokenVessel = vessels.find(v => 
+                        v.state === BROKEN && 
+                        v.location.row === row && 
+                        v.location.col === col
+                    );
+                    
+                    if (brokenVessel) {
+                        // Set both vessels to return to facility
+                        brokenVessel.state = RETURN;
+                        brokenVessel.target = facilityLocation;
+                        vessel.state = RETURN;
+                        vessel.target = facilityLocation;
+                    } else {
+                        // No broken vessel found, return home
+                        vessel.state = RIGGING;
+                        vessel.target = {"row":1,"col":2};
+                    }
+                }
+                break;
+
+            case RETURN:
+                if (hasArrived) {
+                    // Check if we have a broken vessel with us
+                    var repairedVessel = vessels.find(v => 
+                        v.state === RETURN && 
+                        v.location.row === row && 
+                        v.location.col === col &&
+                        v.type !== 2
+                    );
+                    
+                    if (repairedVessel) {
+                        repairedVessel.state = IN_FACILITY;
+                        repairedVessel.timeAdmitted = currentTime;
+                    }
+                    vessel.state = RIGGING;
+                    vessel.target = {"row":1,"col":2};
+                }
+                break;
+        }
+    } 
+    // Regular vessel logic (Bellina and Venosa)
+    else {
+        switch (state) {
+            case ARRIVAL:
+                if (hasArrived) {
+                    vessel.state = SAFETY_CHECK;
+                }
+			break;
+
+            case RETURN:
+                if (hasArrived) {
+                    if (vessel.location.row === facilityLocation.row && vessel.location.col === facilityLocation.col) {
+                        // We've arrived at facility for repairs
+                        vessel.state = IN_FACILITY;
+                        vessel.timeAdmitted = currentTime;
+                    } else {
+                        // Normal return to home position
+                        if (vessel.volume < 100) {
+                            vessel.state = REFUELLING;
+                            vessel.target = (vessel.type === 0) ?
+                                {"row":2,"col":2} : // Tank for Bellina
+                                {"row":4,"col":2};  // Tank for Venosa
+                        } else {
+                            vessel.state = RIGGING;
+                        }
+                    }
+                }
+                break;
+
+			case REFUELLING:
+				if (hasArrived) {
+					vessel.volume = vessel.maxvolume;
+					console.log(`${vessel.label} has refueled to ${vessel.volume} m³`);
+					vessel.state = RIGGING;
 				}
-			}
-		break;
+				break;
 
-		case REFUELLING:
-			if (hasArrived) {
-				vessel.volume = vessel.maxvolume
-				console.log(`${vessel.label} has refueled to ${vessel.volume} m³`);
-				vessel.state = RIGGING;
-			}
-		break;
+			case BROKEN:
+				// If repair vessel is coming to us, start moving with it
+				var repairVesselComing = vessels.find(v => 
+					v.type === 2 && 
+					v.state === ARRIVAL && 
+					v.target.row === row && 
+					v.target.col === col
+				);
+				
+				if (repairVesselComing && hasArrived) {
+					state = RETURN;
+					target = facilityLocation;
+				}
+				break;
+			
+			case IN_FACILITY:
+				// Stay in facility for repair time (5 time units)
+				if (currentTime - vessel.timeAdmitted >= 5) {
+					vessel.state = RIGGING;
+					// Return to original target position from vessels array
+					vessel.target = (vessel.type === 0) ?
+						{"row":2,"col":2} : // Bellina's home position
+						{"row":4,"col":2};  // Venosa's home position
+					console.log(`${vessel.label} has been repaired and returned to service!`);
+				}
+			break;
 
-		default:
-		break;
+			default:
+			break;
+		}
 	}
 
-	var targetRow = vessel.target.row;
-	var targetCol = vessel.target.col;
+    // Movement logic for all vessels except when BROKEN or IN_FACILITY
+    if (state !== BROKEN && state !== IN_FACILITY) {
+        var targetRow = vessel.target.row;
+        var targetCol = vessel.target.col;
+        var rowsToGo = targetRow - row;
+        var colsToGo = targetCol - col;
+        var cellsPerStep = 1;
 
-	// Compute distance to the target destination
-	var rowsToGo = targetRow - row;
-	var colsToGo = targetCol - col;
-	// Set speed
-	var cellsPerStep = 1;
+        var newRow = row + Math.min(Math.abs(rowsToGo), cellsPerStep) * Math.sign(rowsToGo);
+        var newCol = col + Math.min(Math.abs(colsToGo), cellsPerStep) * Math.sign(colsToGo);
 
-	// Compute the cell to move to
-	var newRow = row + Math.min(Math.abs(rowsToGo),cellsPerStep)*Math.sign(rowsToGo);
-	var newCol = col + Math.min(Math.abs(colsToGo),cellsPerStep)*Math.sign(colsToGo);
-	
-	// Update the location of vessel
-	vessel.location.row = newRow;
-	vessel.location.col = newCol;
-}
+        vessel.location.row = newRow;
+        vessel.location.col = newCol;
+    }
+}	
 
 function removeDynamicAgents(){
 	// We need to remove ships who have been bunkered 
