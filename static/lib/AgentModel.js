@@ -66,7 +66,7 @@ var vessels = [
 var vessel_a = vessels[0];
 var vessel_b = vessels[1];
 
-var repair_vessel = {"type":2,"label":"Repair Vessel","location":{"row":1,"col":2},"target":{"row":1,"col":2},"state":RIGGING, "volume":0, "maxvolume":0};
+var repair_vessel = {"type":2,"label":"Repair Vessel","location":{"row":2,"col":1},"target":{"row":2,"col":1},"state":RIGGING, "volume":0, "maxvolume":0};
 
 //Counters for ship types per vessel
 let shipServicedCounts = {
@@ -86,19 +86,19 @@ let shipServicedCounts = {
 
 // Section our screen into different areas
 var areas =[
- {"label":"LNG Facility","startRow":1,"numRows":6,"startCol":1,"numCols":1,"color":"#b3b3b3"},
- {"label":"Port","startRow":1,"numRows":6,"startCol":2,"numCols":8,"color":"#00c1e1"},
- {"label":"Sea_shallow","startRow":1,"numRows":6,"startCol":9,"numCols":2,"color":"#00c1e1"},
- {"label":"Sea_deep","startRow":1,"numRows":6,"startCol":11,"numCols":1,"color":"#27a8df"}	
+ {"label":"LNG Facility","startRow":1,"numRows":1,"startCol":1,"numCols":10,"color":"#b3b3b3"},
+ {"label":"Port","startRow":2,"numRows":5,"startCol":1,"numCols":8,"color":"#00c1e1"},
+ {"label":"Sea_shallow","startRow":2,"numRows":5,"startCol":9,"numCols":2,"color":"#00c1e1"},
+ {"label":"Sea_deep","startRow":6,"numRows":1,"startCol":1,"numCols":10,"color":"#27a8df"}	
 ]
 
 var tanks =[
-	{"label":"Tank 1","location":{"row":2,"col":1}},
-	{"label":"Tank 2","location":{"row":3,"col":1}},
-	{"label":"Tank 3","location":{"row":4,"col":1}},
+	{"label":"Tank 1","location":{"row":1,"col":8}},
+	{"label":"Tank 2","location":{"row":1,"col":9}},
+	{"label":"Tank 3","location":{"row":1,"col":10}},
    ]
 
-var repairVesselHome = {"row":1,"col":2};
+var repairVesselHome = {"row":2,"col":1};
 var facilityLocation = {"row":1,"col":1};
 
 var currentTime = 0;
@@ -266,7 +266,7 @@ function updateSurface() {
         .attr("width", Math.min(cellWidth / 1.75, cellHeight / 1.75) + "px")
         .attr("height", Math.min(cellWidth / 1.75, cellHeight / 1.75) + "px")
         .attr("xlink:href", function(d) {
-            return (d.state === RETURN || d.state === COMPLETE) ? iconVesselBackward : iconVesselForward;
+            return (d.state === RETURN || d.state === REFUELLING) ? iconVesselBackward : iconVesselForward;
         });
 
     // Add labels
@@ -282,7 +282,7 @@ function updateSurface() {
         .attr("x", function(d) { var cell = getLocationCell(d.location); return cell.x + "px"; })
         .attr("y", function(d) { var cell = getLocationCell(d.location); return cell.y + "px"; })
         .attr("xlink:href", function(d) {
-            return (d.state === RETURN || d.state === COMPLETE) ? iconVesselBackward : iconVesselForward;
+            return (d.state === RETURN || d.state === REFUELLING) ? iconVesselBackward : iconVesselForward;
         })
         .duration(animationDelay).ease('linear');
 
@@ -321,17 +321,13 @@ function updateSurface() {
         .attr("width", Math.min(cellWidth, cellHeight) + "px")
         .attr("height", Math.min(cellWidth, cellHeight) + "px")
         .attr("xlink:href", function(d) {
-            switch (d.type) {
-                case "carcarrier":
-                    return (d.state === COMPLETE || d.state === UNMOORING) ? iconCarCarrierBackward : iconCarCarrierForward;
-                case "bulkcarrier":
-                    return (d.state === COMPLETE || d.state === UNMOORING) ? iconBulkCarrierBackward : iconBulkCarrierForward;
-                case "oiltanker":
-                    return (d.state === COMPLETE || d.state === UNMOORING) ? iconOilTankerBackward : iconOilTankerForward;
-                case "container":
-                    return (d.state === COMPLETE || d.state === UNMOORING) ? iconContainerBackward : iconContainerForward;
-            }
-        });
+			switch (d.type) {
+				case "carcarrier": return iconCarCarrierForward;
+				case "bulkcarrier": return iconBulkCarrierForward;
+				case "oiltanker": return iconOilTankerForward;
+				case "container": return iconContainerForward;
+			}
+		});
 
     // Update ship locations and icons
     var shipImages = allships.selectAll("image");
@@ -339,17 +335,13 @@ function updateSurface() {
         .attr("x", function(d) { var cell = getLocationCell(d.location); return cell.x + "px"; })
         .attr("y", function(d) { var cell = getLocationCell(d.location); return cell.y + "px"; })
         .attr("xlink:href", function(d) {
-            switch (d.type) {
-                case "carcarrier":
-                    return (d.state === COMPLETE || d.state === UNMOORING) ? iconCarCarrierBackward : iconCarCarrierForward;
-                case "bulkcarrier":
-                    return (d.state === COMPLETE || d.state === UNMOORING) ? iconBulkCarrierBackward : iconBulkCarrierForward;
-                case "oiltanker":
-                    return (d.state === COMPLETE || d.state === UNMOORING) ? iconOilTankerBackward : iconOilTankerForward;
-                case "container":
-                    return (d.state === COMPLETE || d.state === UNMOORING) ? iconContainerBackward : iconContainerForward;
-            }
-        })
+			switch (d.type) {
+				case "carcarrier": return iconCarCarrierForward;
+				case "bulkcarrier": return iconBulkCarrierForward;
+				case "oiltanker": return iconOilTankerForward;
+				case "container": return iconContainerForward;
+			}
+		})
         .duration(animationDelay).ease('linear');
 
     // Statistics layer
@@ -398,12 +390,12 @@ function addDynamicAgents(){
             var newship = {
                 "id": nextShipID++,
 				"type": ["carcarrier", "bulkcarrier", "oiltanker","container"][getRandomInt(0,3)], //randomly chooses one of the four types of ships
-                "location":{"row":4,"col":11},
+                "location":{"row":7,"col":11},
                 "target":{"row":port[1],"col":port[2]},
                 "state":MOORING,
                 "timeAdmitted":0,
                 "port": port[0],
-                "exit":{"row":seaRowExit,"col":seaCol}
+                "exit":{"row":6,"col":1}
             };
             
             ships.push(newship);
@@ -614,8 +606,8 @@ function updateVessel(vesselIndex) {
 				if (vessel.volume < 100) {
 					vessel.state = REFUELLING;
 					vessel.target = (vessel.type === 0) ?
-						{ "row": 2, "col": 2 } : // Bellina
-						{ "row": 4, "col": 2 };  // Venosa
+						{ "row": 2, "col": 10 } : // Bellina
+						{ "row": 2, "col": 9 };  // Venosa
 				} else {
 					vessel.state = RIGGING;
 				}
