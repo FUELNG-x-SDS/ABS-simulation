@@ -60,8 +60,8 @@ const COMPLETE=4;
 var ships = [];
 // Vessel is a static list, populated with Vessel A and Vessel B	
 var vessels = [
-    {"type":0,"label":"Vessel Bellina","location":{"row":2,"col":2},"target":{"row":2,"col":2},"state":RIGGING, "volume":7000, "maxvolume":7000},
-    {"type":1,"label":"Vessel Venosa","location":{"row":4,"col":2},"target":{"row":4,"col":2},"state":RIGGING, "volume":16800, "maxvolume":16800}
+    {"type":0,"label":"Vessel Bellina","location":{"row":2,"col":4},"target":{"row":2,"col":4},"state":RIGGING, "volume":7000, "maxvolume":7000},
+    {"type":1,"label":"Vessel Venosa","location":{"row":4,"col":4},"target":{"row":4,"col":4},"state":RIGGING, "volume":16800, "maxvolume":16800}
 ];
 var vessel_a = vessels[0];
 var vessel_b = vessels[1];
@@ -104,7 +104,7 @@ var facilityLocation = {"row":1,"col":1};
 var currentTime = 0;
 // Idk what statistics to use yet
 var statistics = [
-{"name":"Average time bunkering: ","location":{"row":portARow,"col":portACol},"cumulativeValue":0,"count":0},
+{"name":"Average time bunkering: ","location":{"row":2,"col":6},"cumulativeValue":0,"count":0},
 // {"name":"Average time bunkering, Ship B: ","location":{"row":doctorRow+4,"col":doctorCol-4},"cumulativeValue":0,"count":0}
 ];
 
