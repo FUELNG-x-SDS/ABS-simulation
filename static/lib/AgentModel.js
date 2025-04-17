@@ -471,6 +471,10 @@ function updateShip(shipIndex){
 		break;
 
 		case BUNKERING:
+			if (ship.needsRepair) {
+				// Do nothing, wait for repair to complete
+				break;
+			}
 			// Pause for 4 sec == 4hr
 			if ((currentTime - ship.bunkeringStartTime) >= ship.bunkeringDuration){
 				ship.state = COMPLETE;
@@ -492,7 +496,7 @@ function updateShip(shipIndex){
 				updateShipCounters();
 			}
 			// Check for excessive delay
-			if ((currentTime - ship.bunkeringStartTime) > 4) {
+			if ((currentTime - ship.bunkeringStartTime) > 3) {
 				ship.needsRepair = true;
 				console.log(`Ship ${ship.id} requires repair!`);
 			}
@@ -660,59 +664,58 @@ function updateVessel(vesselIndex) {
 }
 
 
+// Define fixed repair site locations per port
+const repairSiteLocations = {
+    0: { row: 2, col: 4 }, // Port A
+    1: { row: 4, col: 4 }  // Port B
+};
+
 function updateRepairVessel() {
     const vessel = repair_vessel;
     const row = vessel.location.row;
     const col = vessel.location.col;
 
-    // Check if currently repairing
+    // If currently repairing
     if (vessel.state === "WAITING") {
-        // Wait for 2 time units to simulate repair time
         if (currentTime - vessel.waitStart >= 2) {
-            const repairedShip = ships.find(s => s.needsRepair && 
-                s.location.row === vessel.location.row &&
-                s.location.col === vessel.location.col);
-            
+            const repairedShip = ships.find(s =>
+                s.needsRepair &&
+                s.id === vessel.repairingShipId &&
+                s.state === BUNKERING
+            );
+
             if (repairedShip) {
                 repairedShip.needsRepair = false;
-                repairedShip.bunkeringStartTime = currentTime; // resume bunkering
-                console.log(`✔ Repaired ship ${repairedShip.id} at (${row}, ${col})`);
+                repairedShip.state = COMPLETE;
+                repairedShip.bunkeringStartTime = currentTime; // restart time for stats
+
+                const portVessel = vessels[repairedShip.port];
+                portVessel.state = COMPLETE;
+
+                console.log(`✔ Repaired ship ${repairedShip.id} at port ${repairedShip.port}`);
             }
 
-            // After repair, return to home
             vessel.state = "RETURNING";
             vessel.target = { ...repairVesselHome };
         }
 
-        return; // Skip movement while waiting
+        return; // Stay in place while waiting
     }
 
-    // If idle, find a ship that needs repair
+    // If idle or returning, look for a ship needing repair
     if (vessel.state === RIGGING || vessel.state === "RETURNING") {
-        const targetShip = ships.find(s => s.needsRepair);
+        const targetShip = ships.find(s => s.needsRepair && s.state === BUNKERING);
         if (targetShip) {
             vessel.state = "MOVING_TO_REPAIR";
-            vessel.target = { 
-                row: targetShip.location.row, 
-                col: targetShip.location.col 
-            };
             vessel.repairingShipId = targetShip.id;
-            console.log(`🚧 Repair vessel dispatched to ship ${targetShip.id}`);
-        } else if (vessel.state === "RETURNING" && 
-                   row === vessel.target.row && col === vessel.target.col) {
-            vessel.state = RIGGING; // Reached home
-        }
-    }
-
-    // Keep tracking the ship if it's moving
-    if (vessel.state === "MOVING_TO_REPAIR") {
-        const targetShip = ships.find(s => s.needsRepair && s.id === vessel.repairingShipId);
-        if (targetShip) {
-            vessel.target = { row: targetShip.location.row, col: targetShip.location.col };
-        } else {
-            // If the ship no longer needs repair
-            vessel.state = "RETURNING";
-            vessel.target = { ...repairVesselHome };
+            vessel.target = { ...repairSiteLocations[targetShip.port] };
+            console.log(`🚧 Repair vessel dispatched to port ${targetShip.port} for ship ${targetShip.id}`);
+        } else if (
+            vessel.state === "RETURNING" &&
+            row === vessel.target.row &&
+            col === vessel.target.col
+        ) {
+            vessel.state = RIGGING; // Reset to idle once back home
         }
     }
 
@@ -729,13 +732,18 @@ function updateRepairVessel() {
     vessel.location.row = newRow;
     vessel.location.col = newCol;
 
-    // If arrived at ship location, begin repair
-    if (vessel.state === "MOVING_TO_REPAIR" && newRow === targetRow && newCol === targetCol) {
+    // Begin repair if arrived at fixed repair location
+    if (
+        vessel.state === "MOVING_TO_REPAIR" &&
+        newRow === targetRow &&
+        newCol === targetCol
+    ) {
         vessel.state = "WAITING";
         vessel.waitStart = currentTime;
-        console.log(`🔧 Repair vessel arrived at ship ${vessel.repairingShipId}`);
+        console.log(`🔧 Repair vessel arrived at port site for ship ${vessel.repairingShipId}`);
     }
 }
+
 
 
 
