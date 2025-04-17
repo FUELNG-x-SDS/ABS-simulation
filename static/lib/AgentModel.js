@@ -530,6 +530,13 @@ function updateShip(shipIndex){
 				vessel.target.col = 4;
 			}
 
+			// ✅ Free up the port here!
+			if (ship.port == 0) {
+				portAVacancy = true;
+			} else if (ship.port == 1) {
+				portBVacancy = true;
+			}
+
 			var timeBunkering = currentTime - ship.timeAdmitted;
 
 			// compute statistics for leaving ship
