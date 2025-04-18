@@ -371,19 +371,19 @@ function updateSurface() {
 		})
         .duration(animationDelay).ease('linear');
 
-    // Statistics layer
-    var allstatistics = surface.selectAll(".statistics").data(statistics);
-    var newstatistics = allstatistics.enter().append("g").attr("class", "statistics");
-    newstatistics.append("text")
-        .attr("x", function(d) { var cell = getLocationCell(d.location); return (cell.x + cellWidth / 2) + "px"; })
-        .attr("y", function(d) { var cell = getLocationCell(d.location); return (cell.y + cellHeight / 2) + "px"; })
-        .attr("dy", ".35em")
-        .text("");
+    // // Statistics layer
+    // var allstatistics = surface.selectAll(".statistics").data(statistics);
+    // var newstatistics = allstatistics.enter().append("g").attr("class", "statistics");
+    // newstatistics.append("text")
+    //     .attr("x", function(d) { var cell = getLocationCell(d.location); return (cell.x + cellWidth / 2) + "px"; })
+    //     .attr("y", function(d) { var cell = getLocationCell(d.location); return (cell.y + cellHeight / 2) + "px"; })
+    //     .attr("dy", ".35em")
+    //     .text("");
 
-    allstatistics.selectAll("text").text(function(d) {
-        var avgLengthOfStay = d.cumulativeValue / (Math.max(1, d.count));
-        return d.name + avgLengthOfStay.toFixed(1);
-    });
+    // allstatistics.selectAll("text").text(function(d) {
+    //     var avgLengthOfStay = d.cumulativeValue / (Math.max(1, d.count));
+    //     return d.name + avgLengthOfStay.toFixed(1);
+    // });
 }
 
 
