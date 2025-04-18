@@ -93,7 +93,7 @@ var areas =[
 ]
 
 var tanks =[
-	{"label":"Tank 1","location":{"row":1,"col":8}},
+	//{"label":"Tank 1","location":{"row":1,"col":8}},
 	{"label":"Tank 2","location":{"row":1,"col":9}},
 	{"label":"Tank 3","location":{"row":1,"col":10}},
    ]
@@ -385,6 +385,13 @@ function updateSurface() {
         return d.name + avgLengthOfStay.toFixed(1);
     });
 }
+
+
+function willHaveEnoughFuel(vessel, shipType) {
+    const requiredVolume = getBunkeringVolume(shipType);
+    return vessel.volume >= requiredVolume;
+}
+
 	
 
 function addDynamicAgents(){
@@ -397,8 +404,9 @@ function addDynamicAgents(){
             const shipType = shipTypes[getRandomInt(0, 3)];
             
             // Determine which ports can service this ship type
-            const canServicePortA = (shipType === "carcarrier" || shipType === "bulkcarrier");
-            const canServicePortB = true;
+            const canServicePortA = (shipType === "carcarrier" || shipType === "bulkcarrier") && willHaveEnoughFuel(vessel_a, shipType);
+            const canServicePortB = willHaveEnoughFuel(vessel_b, shipType);
+
             
             // Assign to an available port that can service this ship, prioritizes venosa
             if (portBVacancy && canServicePortB) {
@@ -410,7 +418,19 @@ function addDynamicAgents(){
 				seaRowExit = getRandomInt(1, 2);
 				portAVacancy = false;
 			} else {
-				return; // No available port can service this ship
+				// ⚠️ Send vessels to refuel if they’re low
+				if (!canServicePortA && vessel_a.state === RIGGING) {
+					vessel_a.state = REFUELLING;
+					vessel_a.target = { row: 2, col: 10 }; // Bellina's refuel spot
+					console.log("🔄 Bellina sent to refuel");
+				}
+				if (!canServicePortB && vessel_b.state === RIGGING) {
+					vessel_b.state = REFUELLING;
+					vessel_b.target = { row: 2, col: 9 }; // Venosa's refuel spot
+					console.log("🔄 Venosa sent to refuel");
+				}
+			
+				return; // Cannot admit ship now
 			}
 			
 
@@ -651,7 +671,7 @@ function updateVessel(vesselIndex) {
 
 		case RETURN:
 			if (hasArrived) {
-				if (vessel.volume < 100) {
+				if (vessel.volume < 1100) {
 					vessel.state = REFUELLING;
 					vessel.target = (vessel.type === 0) ?
 						{ "row": 2, "col": 10 } : // Bellina
@@ -666,7 +686,14 @@ function updateVessel(vesselIndex) {
 			if (hasArrived) {
 				vessel.volume = vessel.maxvolume;
 				console.log(`${vessel.label} has refueled to ${vessel.volume} m³`);
-				vessel.state = RIGGING;
+				
+				//Send vessel back to its default position
+				if (vessel.type === 0) {
+					vessel.target = { row: 2, col: 4 }; // Bellina
+				} else if (vessel.type === 1) {
+					vessel.target = { row: 4, col: 4 }; // Venosa
+				}
+				vessel.state = RETURN;
 			}
 			break;
 
@@ -717,7 +744,12 @@ function updateRepairVessel() {
                 const portVessel = vessels[repairedShip.port];
                 portVessel.state = COMPLETE;
 
-                console.log(`✔ Repaired ship ${repairedShip.id} at port ${repairedShip.port}`);
+				// Deduct LNG during repair completion
+				let amountUsed = getBunkeringVolume(repairedShip.type);
+				portVessel.volume -= amountUsed;
+				if (portVessel.volume < 0) portVessel.volume = 0;
+
+                console.log(`Repaired ship ${repairedShip.id} at port ${repairedShip.port}`);
             }
 
             vessel.state = "RETURNING";
