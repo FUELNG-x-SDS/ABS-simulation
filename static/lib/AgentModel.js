@@ -401,62 +401,78 @@ function needsRefuel(vessel, eligibleShipTypes) {
 	return true;
 }
 	
-function addDynamicAgents(){
-    // Create a ship
-    if (Math.random()< probArrival){
-        // Do not accept any ships if ports are full
-        if (portAVacancy===true || portBVacancy===true){
-            // Randomly choose a ship type
-            const shipTypes = ["carcarrier", "bulkcarrier", "oiltanker", "container"];
-            const shipType = shipTypes[getRandomInt(0, 3)];
-            
-            // Determine which ports can service this ship type
-            const canServicePortA = (shipType === "carcarrier" || shipType === "bulkcarrier") && willHaveEnoughFuel(vessel_a, shipType);
-            const canServicePortB = willHaveEnoughFuel(vessel_b, shipType);
+function addDynamicAgents() {
+	if (Math.random() < probArrival) {
+		if (portAVacancy === true || portBVacancy === true) {
+			const shipTypes = ["carcarrier", "bulkcarrier", "oiltanker", "container"];
+			const shipType = shipTypes[getRandomInt(0, 3)];
 
-            
-            // Assign to an available port that can service this ship, prioritizes venosa
-            if (portBVacancy && canServicePortB) {
-				var port = [1, portBRow, portBCol];
-				seaRowExit = getRandomInt(4, 5);
-				portBVacancy = false;
-			} else if (portAVacancy && canServicePortA) {
-				var port = [0, portARow, portACol];
-				seaRowExit = getRandomInt(1, 2);
-				portAVacancy = false;
+			const canBellina = willHaveEnoughFuel(vessel_a, shipType);
+			const canVenosa = willHaveEnoughFuel(vessel_b, shipType);
+
+			let port = null;
+
+			// 50-50 assignment for carcarrier and bulkcarrier
+			if (shipType === "carcarrier" || shipType === "bulkcarrier") {
+				const preferBellina = Math.random() < 0.5;
+
+				if (preferBellina && portAVacancy && canBellina) {
+					port = [0, portARow, portACol];
+					seaRowExit = getRandomInt(1, 2);
+					portAVacancy = false;
+				} else if (portBVacancy && canVenosa) {
+					port = [1, portBRow, portBCol];
+					seaRowExit = getRandomInt(4, 5);
+					portBVacancy = false;
+				}
 			} else {
-				// ⚠️ Send vessels to refuel if they’re low
-				if (!canServicePortA && vessel_a.state === RIGGING && needsRefuel(vessel_a, ["carcarrier", "bulkcarrier"])) {
+				// Default: container and oiltanker go to Venosa if possible
+				if (portBVacancy && canVenosa) {
+					port = [1, portBRow, portBCol];
+					seaRowExit = getRandomInt(4, 5);
+					portBVacancy = false;
+				} else if (portAVacancy && canBellina) {
+					port = [0, portARow, portACol];
+					seaRowExit = getRandomInt(1, 2);
+					portAVacancy = false;
+				}
+			}
+
+			if (port !== null) {
+				const newship = {
+					id: nextShipID++,
+					type: shipType,
+					location: { row: 7, col: 11 },
+					target: { row: port[1], col: port[2] },
+					state: MOORING,
+					timeAdmitted: 0,
+					port: port[0],
+					exit: { row: 6, col: 1 }
+				};
+				ships.push(newship);
+			} else {
+				// Cannot admit ship, maybe refuel vessels
+				if (
+					vessel_a.state === RIGGING &&
+					needsRefuel(vessel_a, ["carcarrier", "bulkcarrier"])
+				) {
 					vessel_a.state = REFUELLING;
-					vessel_a.target = { row: 2, col: 10 }; // Bellina's refuel spot
+					vessel_a.target = { row: 2, col: 10 };
 					console.log("🔄 Bellina sent to refuel");
 				}
-				if (!canServicePortB && vessel_b.state === RIGGING && needsRefuel(vessel_b, ["container", "oiltanker", "carcarrier", "bulkcarrier"])) {
+				if (
+					vessel_b.state === RIGGING &&
+					needsRefuel(vessel_b, ["container", "oiltanker", "carcarrier", "bulkcarrier"])
+				) {
 					vessel_b.state = REFUELLING;
-					vessel_b.target = { row: 2, col: 9 }; // Venosa's refuel spot
+					vessel_b.target = { row: 2, col: 9 };
 					console.log("🔄 Venosa sent to refuel");
 				}
-			
-				return; // Cannot admit ship now
 			}
-			
-
-            // Create the new ship object
-            const newship = {
-                "id": nextShipID++,
-				"type": shipType, 
-                "location":{"row":7,"col":11},
-                "target":{"row":port[1],"col":port[2]},
-                "state":MOORING,
-                "timeAdmitted":0,
-                "port": port[0],
-                "exit":{"row":6,"col":1}
-            };
-            
-            ships.push(newship);
-        }
-    }
+		}
+	}
 }
+
 
 function updateShip(shipIndex){
 	shipIndex = Number(shipIndex); // Since it comes as a string
