@@ -102,6 +102,10 @@ var repairVesselHome = {"row":2,"col":1};
 var facilityLocation = {"row":1,"col":1};
 
 var currentTime = 0;
+
+var bellinaCycle = 1;
+var venosaCycle = 1;
+
 // Idk what statistics to use yet
 var statistics = [
 {"name":"Average time bunkering: ","location":{"row":2,"col":6},"cumulativeValue":0,"count":0},
@@ -111,7 +115,7 @@ var statistics = [
 // The probability of a patient arrival needs to be less than the probability of a departure, else an infinite queue will build.
 // You also need to allow travel time for patients to move from their seat in the waiting room to get close to the doctor.
 // So don't set probDeparture too close to probArrival.
-var probArrival = 0.03;
+var probArrival = 0.04;
 var probDeparture = 0.4;
 
 // We can have different types of patients (A and B) according to a probability, probTypeA.
@@ -710,13 +714,36 @@ function updateVessel(vesselIndex) {
 				vessel.volume = vessel.maxvolume;
 				console.log(`${vessel.label} has refueled to ${vessel.volume} m³`);
 				
-				//Send vessel back to its default position
+				// Update cycle, reset time and counters
 				if (vessel.type === 0) {
-					vessel.target = { row: 2, col: 4 }; // Bellina
+					bellinaCycle++;
+					currentTime = 0;
+					shipServicedCounts.bellina = {
+						container: 0,
+						bulkcarrier: 0,
+						carcarrier: 0,
+						oiltanker: 0
+					};
 				} else if (vessel.type === 1) {
-					vessel.target = { row: 4, col: 4 }; // Venosa
+					venosaCycle++;
+					currentTime = 0;
+					shipServicedCounts.venosa = {
+						container: 0,
+						bulkcarrier: 0,
+						carcarrier: 0,
+						oiltanker: 0
+					};
 				}
+
+				// Send vessel back to default location
+				vessel.target = (vessel.type === 0)
+					? { row: 2, col: 4 }
+					: { row: 4, col: 4 };
+
 				vessel.state = RETURN;
+
+				// Update display immediately after refuel
+				updateShipCounters();
 			}
 			break;
 
@@ -772,6 +799,14 @@ function updateRepairVessel() {
 				portVessel.volume -= amountUsed;
 				if (portVessel.volume < 0) portVessel.volume = 0;
 
+				// Add this to count the repaired ship
+				if (repairedShip.port === 0) {
+					shipServicedCounts.bellina[repairedShip.type]++;
+				} else {
+					shipServicedCounts.venosa[repairedShip.type]++;
+				}
+				updateShipCounters(); // Refresh sidebar display
+
                 console.log(`Repaired ship ${repairedShip.id} at port ${repairedShip.port}`);
             }
 
@@ -820,7 +855,7 @@ function updateRepairVessel() {
     ) {
         vessel.state = "WAITING";
         vessel.waitStart = currentTime;
-        console.log(`🔧 Repair vessel arrived at port site for ship ${vessel.repairingShipId}`);
+        console.log(`Repair vessel arrived at port site for ship ${vessel.repairingShipId}`);
     }
 }
 
@@ -895,6 +930,13 @@ function updateCurrentCycleDisplay(time){
 	//colour warning (red if volume of LNG is less than 100)
 	document.getElementById("bellina-volume").style.color = vessel_a.volume < 100 ? "red" : "black";
 	document.getElementById("venosa-volume").style.color = vessel_b.volume < 100 ? "red" : "black";
+
+	//update cycle
+	document.getElementById("bellina-cycle").innerText = `Current cycle ${bellinaCycle}`;
+	document.getElementById("venosa-cycle").innerText = `Current cycle ${venosaCycle}`;
+
+	document.getElementById("bellina-cycle-number").innerText = `Number of Ships serviced on cycle ${bellinaCycle}`;
+	document.getElementById("venosa-cycle-number").innerText = `Number of Ships serviced on cycle ${venosaCycle}`;
 }
 
 //updates Ship count in grey sidebar
