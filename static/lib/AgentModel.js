@@ -317,6 +317,11 @@ function updateSurface() {
         })
         .duration(animationDelay).ease('linear');
 
+	allvessels.selectAll("text").transition()
+		.attr("x", function(d) { var cell = getLocationCell(d.location); return (cell.x + cellWidth / 2) + "px"; })
+		.attr("y", function(d) { var cell = getLocationCell(d.location); return (cell.y + cellHeight / 2) + "px"; })
+		.duration(animationDelay).ease('linear');
+
 	// Add repair vessel layout separately
 	var rv = surface.selectAll(".repair-vessel").data([repair_vessel]);
 	var newrv = rv.enter().append("g").attr("class", "repair-vessel");
@@ -339,6 +344,12 @@ function updateSurface() {
 		.attr("y", d => getLocationCell(d.location).y + "px")
 		.attr("xlink:href", d => (d.state === RETURN) ? iconRepairBackward : iconRepairForward)
 		.duration(animationDelay).ease('linear');
+
+	rv.selectAll("text").transition()
+		.attr("x", d => getLocationCell(d.location).x + cellWidth / 2 + "px")
+		.attr("y", d => getLocationCell(d.location).y + cellHeight / 2 + "px")
+		.duration(animationDelay).ease('linear');
+	
 		
 
     // Ships layout
