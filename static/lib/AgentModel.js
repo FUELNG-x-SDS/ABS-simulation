@@ -111,7 +111,7 @@ var statistics = [
 // The probability of a patient arrival needs to be less than the probability of a departure, else an infinite queue will build.
 // You also need to allow travel time for patients to move from their seat in the waiting room to get close to the doctor.
 // So don't set probDeparture too close to probArrival.
-var probArrival = 0.05;
+var probArrival = 0.03;
 var probDeparture = 0.4;
 
 // We can have different types of patients (A and B) according to a probability, probTypeA.
