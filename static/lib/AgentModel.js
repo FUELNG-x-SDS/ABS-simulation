@@ -392,8 +392,15 @@ function willHaveEnoughFuel(vessel, shipType) {
     return vessel.volume >= requiredVolume;
 }
 
+function needsRefuel(vessel, eligibleShipTypes) {
+	for (const type of eligibleShipTypes) {
+		if (vessel.volume >= getBunkeringVolume(type)) {
+			return false;
+		}
+	}
+	return true;
+}
 	
-
 function addDynamicAgents(){
     // Create a ship
     if (Math.random()< probArrival){
@@ -419,12 +426,12 @@ function addDynamicAgents(){
 				portAVacancy = false;
 			} else {
 				// ⚠️ Send vessels to refuel if they’re low
-				if (!canServicePortA && vessel_a.state === RIGGING) {
+				if (!canServicePortA && vessel_a.state === RIGGING && needsRefuel(vessel_a, ["carcarrier", "bulkcarrier"])) {
 					vessel_a.state = REFUELLING;
 					vessel_a.target = { row: 2, col: 10 }; // Bellina's refuel spot
 					console.log("🔄 Bellina sent to refuel");
 				}
-				if (!canServicePortB && vessel_b.state === RIGGING) {
+				if (!canServicePortB && vessel_b.state === RIGGING && needsRefuel(vessel_b, ["container", "oiltanker", "carcarrier", "bulkcarrier"])) {
 					vessel_b.state = REFUELLING;
 					vessel_b.target = { row: 2, col: 9 }; // Venosa's refuel spot
 					console.log("🔄 Venosa sent to refuel");
@@ -671,7 +678,7 @@ function updateVessel(vesselIndex) {
 
 		case RETURN:
 			if (hasArrived) {
-				if (vessel.volume < 1100) {
+				if (vessel.volume < 100) {
 					vessel.state = REFUELLING;
 					vessel.target = (vessel.type === 0) ?
 						{ "row": 2, "col": 10 } : // Bellina
