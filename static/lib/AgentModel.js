@@ -133,7 +133,7 @@ function getRandomInt(min, max) {
     return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
-//normal distribution for bunkering process
+//normal distribution for variations in bunkering timing 
 function normalRandom(mean, stdDev) {
     let u = 0, v = 0;
     while (u === 0) u = Math.random(); // Converting [0,1) to (0,1)
@@ -141,6 +141,23 @@ function normalRandom(mean, stdDev) {
     let z = Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
     return mean + z * stdDev;
 }
+
+//function to vary bunkering volume for each type of ship with normal distribution
+function getBunkeringVolume(shipType) {
+    const volumeProfiles = {
+        "container": { mean: 8000, std: 400 },
+        "carcarrier": { mean: 1100, std: 100 },
+        "bulkcarrier": { mean: 3000, std: 300 },
+        "oiltanker": { mean: 10000, std: 500 }
+    };
+    const profile = volumeProfiles[shipType];
+    let u = 0, v = 0;
+    while (u === 0) u = Math.random();
+    while (v === 0) v = Math.random();
+    const z = Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
+    return Math.round(profile.mean + z * profile.std);
+}
+
 
 
 
@@ -381,25 +398,26 @@ function addDynamicAgents(){
             
             // Determine which ports can service this ship type
             const canServicePortA = (shipType === "carcarrier" || shipType === "bulkcarrier");
-            const canServicePortB = true; // Venosa can service all types
+            const canServicePortB = true;
             
-            // Assign to an available port that can service this ship
-            if (portAVacancy && canServicePortA) {
-                var port = [0, portARow, portACol];
-                seaRowExit = getRandomInt(1, 2);
-                portAVacancy = false;
-            } else if (portBVacancy && canServicePortB) {
-                var port = [1, portBRow, portBCol];
-                seaRowExit = getRandomInt(4, 5);
-                portBVacancy = false;
-            } else {
-                return; // No available port can service this ship
-            }
+            // Assign to an available port that can service this ship, prioritizes venosa
+            if (portBVacancy && canServicePortB) {
+				var port = [1, portBRow, portBCol];
+				seaRowExit = getRandomInt(4, 5);
+				portBVacancy = false;
+			} else if (portAVacancy && canServicePortA) {
+				var port = [0, portARow, portACol];
+				seaRowExit = getRandomInt(1, 2);
+				portAVacancy = false;
+			} else {
+				return; // No available port can service this ship
+			}
+			
 
             // Create the new ship object
-            var newship = {
+            const newship = {
                 "id": nextShipID++,
-				"type": ["carcarrier", "bulkcarrier", "oiltanker","container"][getRandomInt(0,3)], //randomly chooses one of the four types of ships
+				"type": shipType, 
                 "location":{"row":7,"col":11},
                 "target":{"row":port[1],"col":port[2]},
                 "state":MOORING,
@@ -481,7 +499,7 @@ function updateShip(shipIndex){
 				vessel.state = COMPLETE;
 
 				// Deduct random LNG amount from vessel
-				let amountUsed = getRandomInt(500, 1500); //Range from 500 to 1500
+				let amountUsed = getBunkeringVolume(ship.type);
 				vessel.volume -= amountUsed;
 				if (vessel.volume < 0) vessel.volume = 0;
 
