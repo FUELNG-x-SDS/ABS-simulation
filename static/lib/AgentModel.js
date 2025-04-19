@@ -378,19 +378,28 @@ function updateSurface() {
 		});
 
 	newships.append("text")
-		.attr("x", function(d) { var cell = getLocationCell(d.location); return (cell.x + cellWidth / 2) + "px"; })
-		.attr("y", function(d) { var cell = getLocationCell(d.location); return (cell.y + cellHeight * 0.85) + "px"; })
+		.attr("x", function(d) { 
+			var cell = getLocationCell(d.location); 
+			return (cell.x + cellWidth / 2) + "px"; 
+		})
+		.attr("y", function(d) { 
+			var cell = getLocationCell(d.location); 
+			return (cell.y + cellHeight * 0.85) + "px"; 
+		})
 		.attr("dy", ".35em")
 		.attr("text-anchor", "middle")
 		.text(function(d) {
+			let label;
 			switch (d.type) {
-				case "carcarrier": return "Car Carrier";
-				case "bulkcarrier": return "Bulk Carrier";
-				case "oiltanker": return "Oil Tanker";
-				case "container": return "Container Vessel";
-				default: return "Ship";
+				case "carcarrier": label = "Car Carrier"; break;
+				case "bulkcarrier": label = "Bulk Carrier"; break;
+				case "oiltanker": label = "Oil Tanker"; break;
+				case "container": label = "Container"; break;
+				default: label = "Ship";
 			}
+			return `${label}, LNG volume = ${d.fuelVolume} m³`;
 		});
+	
 	
 
     // Update ship locations and icons
@@ -453,6 +462,8 @@ function addDynamicAgents() {
 			const canBellina = willHaveEnoughFuel(vessel_a, shipType);
 			const canVenosa = willHaveEnoughFuel(vessel_b, shipType);
 
+			const fuelRequired = getBunkeringVolume(shipType);
+
 			let port = null;
 
 			// 50-50 assignment for carcarrier and bulkcarrier
@@ -492,7 +503,8 @@ function addDynamicAgents() {
 					port: port[0],
 					exit: { row: 6, col: 1 },
 					needsRepair: false,
-    				repairedOnce: false 
+    				repairedOnce: false,
+					fuelVolume: fuelRequired
 				};
 				ships.push(newship);
 			} else {
