@@ -371,6 +371,22 @@ function updateSurface() {
 			}
 		});
 
+	newships.append("text")
+		.attr("x", function(d) { var cell = getLocationCell(d.location); return (cell.x + cellWidth / 2) + "px"; })
+		.attr("y", function(d) { var cell = getLocationCell(d.location); return (cell.y + cellHeight * 0.85) + "px"; })
+		.attr("dy", ".35em")
+		.attr("text-anchor", "middle")
+		.text(function(d) {
+			switch (d.type) {
+				case "carcarrier": return "Car Carrier";
+				case "bulkcarrier": return "Bulk Carrier";
+				case "oiltanker": return "Oil Tanker";
+				case "container": return "Container Vessel";
+				default: return "Ship";
+			}
+		});
+	
+
     // Update ship locations and icons
     var shipImages = allships.selectAll("image");
     shipImages.transition()
@@ -385,6 +401,12 @@ function updateSurface() {
 			}
 		})
         .duration(animationDelay).ease('linear');
+
+	allships.selectAll("text").transition()
+		.attr("x", function(d) { var cell = getLocationCell(d.location); return (cell.x + cellWidth / 2) + "px"; })
+		.attr("y", function(d) { var cell = getLocationCell(d.location); return (cell.y + cellHeight * 0.85) + "px"; })
+		.duration(animationDelay).ease('linear');
+	
 
     // // Statistics layer
     // var allstatistics = surface.selectAll(".statistics").data(statistics);
