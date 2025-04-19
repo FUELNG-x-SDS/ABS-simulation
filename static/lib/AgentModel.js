@@ -112,6 +112,8 @@ var currentTime = 0;
 var bellinaCycle = 1;
 var venosaCycle = 1;
 
+var weather = "sunny";
+
 // Idk what statistics to use yet
 var statistics = [
 {"name":"Average time bunkering: ","location":{"row":2,"col":6},"cumulativeValue":0,"count":0},
@@ -121,7 +123,7 @@ var statistics = [
 // The probability of a patient arrival needs to be less than the probability of a departure, else an infinite queue will build.
 // You also need to allow travel time for patients to move from their seat in the waiting room to get close to the doctor.
 // So don't set probDeparture too close to probArrival.
-var probArrival = 0.04;
+var probArrival = 0.05;
 var probDeparture = 0.4;
 
 // We can have different types of patients (A and B) according to a probability, probTypeA.
@@ -168,6 +170,18 @@ function getBunkeringVolume(shipType) {
     return Math.round(profile.mean + z * profile.std);
 }
 
+
+function getBunkeringDuration(weather) {
+	if (weather === "sunny") {
+		// Right-skewed: most values are lower
+		let r = Math.pow(Math.random(), 2); // skew right
+		return Math.round(3 + r * 4); // 3 to 7 hours
+	} else {
+		// Left-skewed: most values are higher
+		let r = 1 - Math.pow(Math.random(), 2); // skew left
+		return Math.round(4 + r * 4); // 4 to 8 hours
+	}
+}
 
 
 
@@ -582,7 +596,7 @@ function updateShip(shipIndex){
 					vessel.state = BUNKERING;
 
 					// Assign randomized duration for bunkering
-					ship.bunkeringDuration = Math.max(3, Math.round(normalRandom(4, 1))); // e.g., mean=4hrs, std=1hr, min=3hrs
+					ship.bunkeringDuration = getBunkeringDuration(weather); 
 					ship.bunkeringStartTime = currentTime;
 				}
 			}
@@ -613,8 +627,11 @@ function updateShip(shipIndex){
 				// Update the DOM counters
 				updateShipCounters();
 			}
+
+			let repairThreshold = (weather === "sunny") ? 4 : 6;
+
 			// Check for excessive delay
-			if ((currentTime - ship.bunkeringStartTime) > 3 && !ship.needsRepair && !ship.repairedOnce) {
+			if ((currentTime - ship.bunkeringStartTime) > repairThreshold && !ship.needsRepair && !ship.repairedOnce) {
 				ship.needsRepair = true;
 				console.log(`Ship ${ship.id} requires repair!`);
 			}
@@ -970,6 +987,11 @@ function updateCurrentCycleDisplay(time){
 	const day = Math.floor(time/24) + 1;
 	const hour = Math.floor(time % 24);
 
+	if (hour === 0) {
+		weather = Math.random() < 0.5 ? "sunny" : "rainy";
+		console.log("New weather: " + weather);
+	}
+
 	//Update DOM - match to actual sidebar element IDs
 	document.getElementById("bellina-day").innerText = `Day: ${day}`;
 	document.getElementById("bellina-time").innerText = `Current time: ${hour}:00 h`;
@@ -991,6 +1013,8 @@ function updateCurrentCycleDisplay(time){
 
 	document.getElementById("bellina-cycle-number").innerText = `Number of Ships serviced on cycle ${bellinaCycle}`;
 	document.getElementById("venosa-cycle-number").innerText = `Number of Ships serviced on cycle ${venosaCycle}`;
+
+	document.getElementById("weather-condition").innerText = `Weather: ${weather}`;
 }
 
 //updates Ship count in grey sidebar
