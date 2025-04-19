@@ -20,6 +20,7 @@ body {
     font-size: 15px;
     line-height: 1;
     margin-top: -10px;
+    overflow-y: auto;
     
 }
 
@@ -47,6 +48,23 @@ body {
     background-color: white;
     padding: 10px;
 }
+
+#factors-section {
+    background-color: #f2f2f2; /* Matches sidebar */
+    font-size: 15px;
+    padding: 0 10px;
+    margin: 10px 0;
+}
+
+#factors-section h3 {
+    margin-top: 0;
+    font-size: 16px;
+}
+
+#factors-section p {
+    margin: 4px 0;
+}
+
 
 
 
