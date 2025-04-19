@@ -113,6 +113,8 @@ var bellinaCycle = 1;
 var venosaCycle = 1;
 
 var weather = "sunny";
+var lngPrice = "low"; // or "high"
+
 
 // Idk what statistics to use yet
 var statistics = [
@@ -468,7 +470,8 @@ function needsRefuel(vessel, eligibleShipTypes) {
 }
 	
 function addDynamicAgents() {
-	if (Math.random() < probArrival) {
+	let dynamicProbArrival = (lngPrice === "low") ? 0.08 : 0.03;
+	if (Math.random() < dynamicProbArrival) {
 		if (portAVacancy === true || portBVacancy === true) {
 			const shipTypes = ["carcarrier", "bulkcarrier", "oiltanker", "container"];
 			const shipType = shipTypes[getRandomInt(0, 3)];
@@ -989,7 +992,8 @@ function updateCurrentCycleDisplay(time){
 
 	if (hour === 0) {
 		weather = Math.random() < 0.5 ? "sunny" : "rainy";
-		console.log("New weather: " + weather);
+		lngPrice = Math.random() < 0.5 ? "low" : "high";
+		console.log("🌤️ Weather:", weather, "| 💸 LNG Price:", lngPrice);
 	}
 
 	//Update DOM - match to actual sidebar element IDs
@@ -1015,6 +1019,8 @@ function updateCurrentCycleDisplay(time){
 	document.getElementById("venosa-cycle-number").innerText = `Number of Ships serviced on cycle ${venosaCycle}`;
 
 	document.getElementById("weather-condition").innerText = `Weather: ${weather}`;
+	document.getElementById("lng-price-display").innerText = `LNG price: ${lngPrice}`;
+
 }
 
 //updates Ship count in grey sidebar
