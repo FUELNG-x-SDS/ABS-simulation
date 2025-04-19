@@ -66,7 +66,10 @@ var vessels = [
 var vessel_a = vessels[0];
 var vessel_b = vessels[1];
 
-var repair_vessel = {"type":2,"label":"Repair Vessel","location":{"row":2,"col":1},"target":{"row":2,"col":1},"state":RIGGING, "volume":0, "maxvolume":0};
+var repair_vessels = [
+    { id: 0, type: 2, label: "Repair Vessel 1", location: { row: 2, col: 1 }, target: { row: 2, col: 1 }, state: RIGGING, assignedPort: 0 },
+    { id: 1, type: 2, label: "Repair Vessel 2", location: { row: 4, col: 1 }, target: { row: 4, col: 1 }, state: RIGGING, assignedPort: 1 }
+];
 
 //Counters for ship types per vessel
 let shipServicedCounts = {
@@ -98,7 +101,10 @@ var tanks =[
 	{"label":"Tank 3","location":{"row":1,"col":10}},
    ]
 
-var repairVesselHome = {"row":2,"col":1};
+var repairVesselHomes = [
+    { row: 2, col: 1 },
+    { row: 4, col: 1 }
+];
 var facilityLocation = {"row":1,"col":1};
 
 var currentTime = 0;
@@ -323,7 +329,7 @@ function updateSurface() {
 		.duration(animationDelay).ease('linear');
 
 	// Add repair vessel layout separately
-	var rv = surface.selectAll(".repair-vessel").data([repair_vessel]);
+	var rv = surface.selectAll(".repair-vessel").data(repair_vessels);
 	var newrv = rv.enter().append("g").attr("class", "repair-vessel");
 
 	newrv.append("svg:image")
@@ -484,7 +490,9 @@ function addDynamicAgents() {
 					state: MOORING,
 					timeAdmitted: 0,
 					port: port[0],
-					exit: { row: 6, col: 1 }
+					exit: { row: 6, col: 1 },
+					needsRepair: false,
+    				repairedOnce: false 
 				};
 				ships.push(newship);
 			} else {
@@ -594,7 +602,7 @@ function updateShip(shipIndex){
 				updateShipCounters();
 			}
 			// Check for excessive delay
-			if ((currentTime - ship.bunkeringStartTime) > 3) {
+			if ((currentTime - ship.bunkeringStartTime) > 3 && !ship.needsRepair && !ship.repairedOnce) {
 				ship.needsRepair = true;
 				console.log(`Ship ${ship.id} requires repair!`);
 			}
@@ -805,8 +813,7 @@ const repairSiteLocations = {
     1: { row: 4, col: 4 }  // Port B
 };
 
-function updateRepairVessel() {
-    const vessel = repair_vessel;
+function updateRepairVessel(vessel) {
     const row = vessel.location.row;
     const col = vessel.location.col;
 
@@ -821,6 +828,7 @@ function updateRepairVessel() {
 
             if (repairedShip) {
                 repairedShip.needsRepair = false;
+				repairedShip.repairedOnce = true;
                 repairedShip.state = COMPLETE;
                 repairedShip.bunkeringStartTime = currentTime; // restart time for stats
 
@@ -844,7 +852,8 @@ function updateRepairVessel() {
             }
 
             vessel.state = "RETURNING";
-            vessel.target = { ...repairVesselHome };
+            vessel.target = { ...repairVesselHomes[vessel.assignedPort] };
+
         }
 
         return; // Stay in place while waiting
@@ -852,7 +861,7 @@ function updateRepairVessel() {
 
     // If idle or returning, look for a ship needing repair
     if (vessel.state === RIGGING || vessel.state === "RETURNING") {
-        const targetShip = ships.find(s => s.needsRepair && s.state === BUNKERING);
+        const targetShip = ships.find(s => s.needsRepair && s.state === BUNKERING && s.port === vessel.assignedPort);
         if (targetShip) {
             vessel.state = "MOVING_TO_REPAIR";
             vessel.repairingShipId = targetShip.id;
@@ -920,7 +929,7 @@ function updateDynamicAgents(){
 	}
 
 	// Update repair vessel separately
-	updateRepairVessel();
+	repair_vessels.forEach(rv => updateRepairVessel(rv));
 
 
 	updateSurface();	
