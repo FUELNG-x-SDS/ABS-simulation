@@ -470,7 +470,7 @@ function needsRefuel(vessel, eligibleShipTypes) {
 }
 	
 function addDynamicAgents() {
-	let dynamicProbArrival = (lngPrice === "low") ? 0.08 : 0.03;
+	let dynamicProbArrival = (lngPrice === "low") ? 0.06 : 0.03;
 	if (Math.random() < dynamicProbArrival) {
 		if (portAVacancy === true || portBVacancy === true) {
 			const shipTypes = ["carcarrier", "bulkcarrier", "oiltanker", "container"];
