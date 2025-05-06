@@ -12,7 +12,7 @@
 Agent-based Simulation (ABS) for debunking services based on the following states and agent rules.
 
 <div style="text-align: center;">
-    <img src="readme_assets/ABS_ver_2.gif" style="height: 95%">
+    <img src="readme_assets/ABS_ver_2.gif">
     <p>Fig. 1: Final ABS user interface (UI).</p>
 </div>
 
