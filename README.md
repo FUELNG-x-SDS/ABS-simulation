@@ -12,7 +12,7 @@
 Agent-based Simulation (ABS) for debunking services based on the following states and agent rules.
 
 <div style="text-align: center;">
-    <img src="readme_assets/ABS_ver_2.gif">
+    <img src="readme_assets/ABS_ver_2.gif" style="height: 95%">
     <p>Fig. 1: Final ABS user interface (UI).</p>
 </div>
 
@@ -22,16 +22,16 @@ Agent-based Simulation (ABS) for debunking services based on the following state
 </div>
 
 <div style="text-align: center;">
-    <img src="readme_assets/Agent_rules.png">
+    <img src="readme_assets/Agent_rules.png" style="height: 65%">
     <p>Table. 1: Rules that agents have to follow to change their states.</p>
 </div>
 
 <div style="text-align: center;">
-    <img src="readme_assets/Agent_knowledge_1.png">
+    <img src="readme_assets/Agent_knowledge_1.png" style="height: 50%">
 </div>
 
 <div style="text-align: center;">
-    <img src="readme_assets/Agent_knowledge_2.png">
+    <img src="readme_assets/Agent_knowledge_2.png" style="height: 50%">
     <p>Table. 2: Knowledge that affects agent behaviours and their states.</p>
 </div>
 
