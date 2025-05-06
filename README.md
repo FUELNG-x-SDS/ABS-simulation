@@ -1,19 +1,40 @@
 # ABS-simulation
 
 ## To-do's
-- [X] Add 3/4 more ship types for simulation + Upload image assets for different vessels.
-- [X] Create side bar layout for statistics purposes.
-- [X] "Current cycle" statistics: 1h = 1s in simulation time.
-- [ ] Fix vessels/ships behaviours: have instances when they fail to function --> use the repair vessel and bring them to a repairing dock or something + add delays (1-3 kind of delays).
-- [ ] Fix vessels/ships behaviours: randomly pick from a uniform distribution when their bunkering is done based on the range of propobabilities of ship capacity (TEU) and fuel required.
-- [ ] Fix vessels/ships behaviours: add vessel capacity and refuel when needed.
-- [ ] Fix vessels/ships behaviours: have a waiting queue/list in line.
-- [ ] Deploy to cloud (if needed).
+☑️ Create side bar layout for statistics purposes.  
+☑️ "Current cycle" statistics: 1h = 1s in simulation time.  
+☑️ Fix vessels, ships & repair behaviours.  
+☑️ Add weather and LNG prices as environmental factors.   
+⬜Fix vessels/ships behaviours: have a waiting queue/list in line.  
+⬜Deploy to cloud (if needed).
 
-Proposed UI simulation workflow: 
+## About
+Agent-based Simulation (ABS) for debunking services based on the following states and agent rules.
+
 <div style="text-align: center;">
-    <img src="readme_assets/Plan_UI.png">
+    <img src="readme_assets/ABS_ver_2.gif">
+    <p>Fig. 1: Final ABS user interface (UI).</p>
 </div>
+
+<div style="text-align: center;">
+    <img src="readme_assets/State_diagram.png">
+    <p>Fig. 2: State diagram for the three agents used.</p>
+</div>
+
+<div style="text-align: center;">
+    <img src="readme_assets/Agent_rules.png">
+    <p>Table. 1: Rules that agents have to follow to change their states.</p>
+</div>
+
+<div style="text-align: center;">
+    <img src="readme_assets/Agent_knowledge_1.png">
+</div>
+
+<div style="text-align: center;">
+    <img src="readme_assets/Agent_knowledge_2.png">
+    <p>Table. 2: Knowledge that affects agent behaviours and their states.</p>
+</div>
+
 
 ## Installation
 ### Download code
@@ -27,14 +48,8 @@ cd ABS-simulation
 pip install Flask
 python main.py
 ```
+> ABS JS code can be found at `static/lib/AgentModel.js`  
+Assets are stored in `static/images`   
+Python (flask server) code is found at `main.py`
 
-## About
-Agent-based Simulation for FUELNG debunkering services.
 
-<div style="text-align: center;">
-    <img src="readme_assets/ABS_ver_1.gif">
-</div>
-
-<div style="text-align: center;">
-    <img src="readme_assets/ABS_State_Diagram.png">
-</div>
